@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Egunerokoa</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
+    
+    <style>
+        :root {
+            --primary-bg: #f4f6f9;
+            --sidebar-bg: #343a40;
+            --card-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        body { background-color: var(--primary-bg); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .metric-card { transition: transform 0.2s; border-left: 5px solid #0d6efd; }
+        .metric-card:hover { transform: translateY(-5px); }
+        .section-header { border-bottom: 2px solid #dee2e6; margin-bottom: 20px; padding-bottom: 10px; }
+        .scrollable-list { max-height: 300px; overflow-y: auto; }
+        #loginOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 9999; display: flex;
+            justify-content: center; align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loginOverlay">
+        <div class="card p-5" style="width: 400px;">
+            <h3 class="text-center mb-4"><i class="fas fa-user-shield"></i>Login Responsable</h3>
+            <div class="mb-3">
+                <label>Usuario</label>
+                <input type="text" id="username" class="form-control" placeholder="usuario">
+            </div>
+            <div class="mb-3">
+                <label>Password</label>
+                <input type="password" id="password" class="form-control" placeholder="contraseña">
+            </div>
+            <button onclick="login()" class="btn btn-primary w-100">Acceder</button>
+            <small class="text-muted text-center d-block mt-2">(Puedes usar cualquier texto, solo es una prueba)</small>
+        </div>
+    </div>
+
+    <div id="appContent" style="display:none;">
+        
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4">
+            <a class="navbar-brand" href="#"><i class="fas fa-network-wired"></i> Egunerokoa</a>
+            <div class="ms-auto">
+                <span class="text-light me-3" id="currentUser"></span>
+                <button onclick="exportReport()" class="btn btn-success btn-sm"><i class="fas fa-file-word"></i> Exportar DOCX</button>
+                <button onclick="logout()" class="btn btn-outline-light btn-sm ms-2">Logout</button>
+            </div>
+        </nav>
+
+        <div class="container-fluid mt-4">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title text-muted text-uppercase fs-6">
+                                <i class="fas fa-chart-line"></i> Service Metrics (Live PowerBI Feed)
+                                <span class="badge bg-success float-end">Connected via API</span>
+                            </h5>
+                            <div class="row text-center mt-3">
+                                <div class="col-md-2 col-6 mb-2">
+                                    <h2 id="metric-calls">0</h2>
+                                    <small class="text-muted">Total Calls</small>
+                                </div>
+                                <div class="col-md-2 col-6 mb-2">
+                                    <h2 id="metric-nds" class="text-danger">0%</h2>
+                                    <small class="text-muted">NDS (Non-Del)</small>
+                                </div>
+                                <div class="col-md-2 col-6 mb-2">
+                                    <h2 id="metric-nda" class="text-warning">0%</h2>
+                                    <small class="text-muted">NDA (Ack)</small>
+                                </div>
+                                <div class="col-md-2 col-6 mb-2">
+                                    <h2 id="metric-ans">0s</h2>
+                                    <small class="text-muted">Avg Answer Speed</small>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <div class="alert alert-info py-1 mb-0">Status: <strong id="service-status">NORMAL</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-5">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <i class="fas fa-book"></i> Bitacora (HR & Incidents)
+                        </div>
+                        <div class="card-body">
+                            
+                            <h6>Log Attendance / Issue</h6>
+                            <div class="input-group mb-3">
+                                <input type="text" id="bit-name" class="form-control" placeholder="Employee Name">
+                                <select id="bit-type" class="form-select">
+                                    <option value="Late">Late</option>
+                                    <option value="Absent">Absent</option>
+                                    <option value="Sick">Sick</option>
+                                    <option value="Free Time">Free Time Request</option>
+                                </select>
+                                <button class="btn btn-primary" onclick="addBitacora()">Log</button>
+                            </div>
+
+                            <div class="scrollable-list border rounded p-2 bg-white">
+                                <ul id="bitacora-list" class="list-group list-group-flush small">
+                                    <li class="list-group-item text-muted text-center">No entries yet today.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-7">
+                    
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-secondary text-white d-flex justify-content-between">
+                            <span><i class="fas fa-tasks"></i> Pending Tasks</span>
+                            <button class="btn btn-sm btn-light py-0" onclick="toggleTaskForm()">+ New</button>
+                        </div>
+                        <div class="card-body">
+                            <div id="taskForm" class="mb-3 p-3 bg-light border rounded" style="display:none;">
+                                <div class="row g-2">
+                                    <div class="col-md-8"><input type="text" id="task-desc" class="form-control" placeholder="Task Description"></div>
+                                    <div class="col-md-4"><input type="text" id="task-owner" class="form-control" placeholder="Assigned To"></div>
+                                    <div class="col-12"><button onclick="addTask()" class="btn btn-sm btn-dark w-100">Add Task</button></div>
+                                </div>
+                            </div>
+                            <table class="table table-hover small">
+                                <thead><tr><th>Task</th><th>Owner</th><th>Status</th></tr></thead>
+                                <tbody id="task-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-secondary text-white">
+                            <i class="fas fa-handshake"></i> Meetings of the Day
+                        </div>
+                        <div class="card-body">
+                             <div class="input-group mb-2">
+                                <input type="time" id="meet-time" class="form-control" style="max-width: 100px;">
+                                <input type="text" id="meet-name" class="form-control" placeholder="Meeting Topic">
+                                <button class="btn btn-secondary" onclick="addMeeting()">Add</button>
+                            </div>
+                            <ul id="meeting-list" class="list-group small"></ul>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. STATE MANAGEMENT ---
+        // In a real app, this would come from MySQL via PHP
+        let appData = {
+            bitacora: [],
+            tasks: [],
+            meetings: [],
+            metrics: { calls: 10000000, nds: 0, nda: 0, ans: 0 }
+        };
+
+        // --- 2. AUTHENTICATION ---
+        function login() {
+            const user = document.getElementById('username').value;
+            if(user) {
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('appContent').style.display = 'block';
+                document.getElementById('currentUser').innerText = `Welcome, ${user}`;
+                startPowerBISimulation(); // Start fetching data
+            }
+        }
+
+        function logout() {
+            location.reload();
+        }
+
+        // --- 3. POWERBI API SIMULATION ---
+        function startPowerBISimulation() {
+            // Simulates fetching data from PHP/PowerBI API every 5 seconds
+            setInterval(() => {
+                // Randomize data slightly to look "Live"
+                appData.metrics.calls = Math.floor(Math.random() * 500) + 1000;
+                appData.metrics.nds = (Math.random() * 5).toFixed(2);
+                appData.metrics.nda = (Math.random() * 2).toFixed(2);
+                appData.metrics.ans = Math.floor(Math.random() * 20) + 5;
+
+                updateDashboard();
+            }, 3000);
+        }
+
+        function updateDashboard() {
+            document.getElementById('metric-calls').innerText = appData.metrics.calls;
+            document.getElementById('metric-nds').innerText = appData.metrics.nds + '%';
+            document.getElementById('metric-nda').innerText = appData.metrics.nda + '%';
+            document.getElementById('metric-ans').innerText = appData.metrics.ans + 's';
+            
+            // Logic for Service Status
+            const statusEl = document.getElementById('service-status');
+            if(appData.metrics.nds > 4.0) {
+                statusEl.innerText = "CRITICAL";
+                statusEl.className = "text-danger";
+            } else {
+                statusEl.innerText = "NORMAL";
+                statusEl.className = "text-success";
+            }
+        }
+
+        // --- 4. BITACORA LOGIC ---
+        function addBitacora() {
+            const name = document.getElementById('bit-name').value;
+            const type = document.getElementById('bit-type').value;
+            const time = new Date().toLocaleTimeString();
+
+            if(name) {
+                appData.bitacora.push({ name, type, time });
+                renderBitacora();
+                document.getElementById('bit-name').value = ''; // Clear input
+            }
+        }
+
+        function renderBitacora() {
+            const list = document.getElementById('bitacora-list');
+            list.innerHTML = '';
+            appData.bitacora.forEach(item => {
+                list.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span><strong>${item.name}</strong> - ${item.type}</span>
+                    <span class="badge bg-light text-dark">${item.time}</span>
+                </li>`;
+            });
+        }
+
+        // --- 5. TASKS LOGIC ---
+        function toggleTaskForm() {
+            const form = document.getElementById('taskForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function addTask() {
+            const desc = document.getElementById('task-desc').value;
+            const owner = document.getElementById('task-owner').value;
+            
+            if(desc) {
+                appData.tasks.push({ desc, owner, status: 'Pending' });
+                renderTasks();
+                document.getElementById('task-desc').value = '';
+                toggleTaskForm();
+            }
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('task-list');
+            list.innerHTML = '';
+            appData.tasks.forEach(item => {
+                list.innerHTML += `<tr>
+                    <td>${item.desc}</td>
+                    <td>${item.owner}</td>
+                    <td><span class="badge bg-warning text-dark">${item.status}</span></td>
+                </tr>`;
+            });
+        }
+
+        // --- 6. MEETINGS LOGIC ---
+        function addMeeting() {
+            const time = document.getElementById('meet-time').value;
+            const name = document.getElementById('meet-name').value;
+
+            if(name) {
+                appData.meetings.push({ time, name });
+                const list = document.getElementById('meeting-list');
+                list.innerHTML += `<li class="list-group-item"><i class="far fa-clock"></i> ${time} - ${name}</li>`;
+                document.getElementById('meet-name').value = '';
+            }
+        }
+
+        // --- 7. EXPORT TO DOCX (Client Side) ---
+        function exportReport() {
+            const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
+
+            // Generate Bitacora Text
+            const bitacoraRows = appData.bitacora.map(b => 
+                new Paragraph({ text: `• [${b.time}] ${b.name}: ${b.type}`, bullet: { level: 0 } })
+            );
+
+            // Generate Task Text
+            const taskRows = appData.tasks.map(t => 
+                new Paragraph({ text: `• ${t.desc} (${t.owner}) - ${t.status}`, bullet: { level: 0 } })
+            );
+
+            const doc = new Document({
+                sections: [{
+                    properties: {},
+                    children: [
+                        new Paragraph({ text: "Daily Operations Report", heading: HeadingLevel.TITLE }),
+                        new Paragraph({ text: `Date: ${new Date().toLocaleDateString()}`, heading: HeadingLevel.HEADING_2 }),
+                        
+                        new Paragraph({ text: " ", spacing: { before: 200 } }), // Spacer
+                        new Paragraph({ text: "1. Service Metrics (End of Day)", heading: HeadingLevel.HEADING_1 }),
+                        new Paragraph({ text: `Final Calls: ${appData.metrics.calls} | NDS: ${appData.metrics.nds}% | NDA: ${appData.metrics.nda}%` }),
+
+                        new Paragraph({ text: " ", spacing: { before: 200 } }),
+                        new Paragraph({ text: "2. Bitacora (HR & Incidents)", heading: HeadingLevel.HEADING_1 }),
+                        ...bitacoraRows,
+
+                        new Paragraph({ text: " ", spacing: { before: 200 } }),
+                        new Paragraph({ text: "3. Pending Tasks", heading: HeadingLevel.HEADING_1 }),
+                        ...taskRows,
+                    ],
+                }],
+            });
+
+            Packer.toBlob(doc).then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                document.body.appendChild(a);
+                a.style = "display: none";
+                a.href = url;
+                a.download = `Daily_Report_${new Date().toISOString().slice(0,10)}.docx`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+            });
+        }
+    </script>
+</body>
+</html>

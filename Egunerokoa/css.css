@@ -36,10 +36,13 @@
         }
         .imagenes_paneles {
             opacity: 0.75;
-            height: 250px;
-            width: 250px;
+            height: 200px;
+            width: 300px;
             position: relative;
             overflow: hidden;
+            display: inline-block; /* Add this */
+            vertical-align: top; /* Add this to align tops */
+            margin: 0 10px; /* Optional: adds space between */
 
             /* default image */
             background-position: center;
@@ -64,7 +67,8 @@
             opacity: 1;
         }
         #panelImagenes1{
-            display:inline
+                display: flex;
+                gap: 20px;
         }
         #panelImagenes2{
             display:none
@@ -76,7 +80,7 @@
         #image-viewer {
             display: none;
             position: fixed;
-            z-index: 1;
+            z-index: 99999;
             padding-top: 100px;
             left: 0;
             top: 0;

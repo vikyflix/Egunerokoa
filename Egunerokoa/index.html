@@ -92,9 +92,9 @@
                                     <img src="./imagenes/SAU.png" alt="" width="300" height="200">
                                     <img src="./imagenes/SAU_DEITU.png" alt="" width="300" height="200">
                                     <img src="./imagenes/SAU_SAP.png" alt="" width="300" height="200">
-                                    </div>
+                                </div>
 
-                                    <div id="image-viewer">
+                                <div id="image-viewer">
                                     <span class="close">&times;</span>
                                     <img class="modal-content" id="full-image">
                                 </div>
@@ -103,30 +103,38 @@
                             <div class="row text-center mt-3" id="panelImagenes2">
                                 <div class="images">
                                     <div class="imagenes_paneles">
-                                    <h1 class="upload-icon">
-                                        <i class="fa fa-plus fa-2x" aria-hidden="true"></i>
-                                    </h1>
-                                    <input
-                                        class="file-uploader"
-                                        type="file"
-                                        onchange="upload()"
-                                        accept="image/*"
-                                    />                                    
+                                        <h1 class="upload-icon">
+                                            <i class="fa fa-plus fa-2x" aria-hidden="true"></i>
+                                        </h1>
+                                        <input
+                                            class="file-uploader"
+                                            type="file"
+                                            onchange="upload(0)"
+                                            accept="image/*"
+                                        />                                    
                                     </div>
-                                </div>
-                                <div class="images">
                                     <div class="imagenes_paneles">
-                                    <h1 class="upload-icon">
-                                        <i class="fa fa-plus fa-2x" aria-hidden="true"></i>
-                                    </h1>
-                                    <input
-                                        class="file-uploader"
-                                        type="file"
-                                        onchange="upload()"
-                                        accept="image/*"
-                                    />                                    
+                                        <h1 class="upload-icon">
+                                            <i class="fa fa-plus fa-2x" aria-hidden="true"></i>
+                                        </h1>
+                                        <input
+                                            class="file-uploader"
+                                            type="file"
+                                            onchange="upload(1)"
+                                            accept="image/*"
+                                        />                                    
                                     </div>
-                                </div>
+                                    <div class="imagenes_paneles">
+                                        <h1 class="upload-icon">
+                                            <i class="fa fa-plus fa-2x" aria-hidden="true"></i>
+                                        </h1>
+                                        <input
+                                            class="file-uploader"
+                                            type="file"
+                                            onchange="upload(2)"
+                                            accept="image/*"
+                                        />                                    
+                                    </div> 
                                 <div id="image-viewer">
                                     <span class="close">&times;</span>
                                     <img class="modal-content" id="full-image">
@@ -236,7 +244,8 @@
             document.getElementById("panelImagenes1").style.display = 'none';
             document.getElementById("panelImagenes2").style.display = 'none';
             document.getElementById("panelImagenes3").style.display = 'none';
-            document.getElementById(text).style.display = 'inline';
+            document.getElementById(text).style.display = 'flex';
+            document.getElementById(text).style.gap = '20px';
             console.log(text)
         }
 
@@ -250,30 +259,53 @@
             $('#image-viewer').hide();
         });
 
-        function upload() {
-        const fileUploadInput = document.querySelector('.file-uploader');
+        $(".imagenes_paneles").click(function(){
+            // Get the background image URL from the CSS
+            var bgImage = $(this).css('background-image');
+            
+            console.log("CLICK ON IMAGE, bg-image: " + bgImage);
+            
+            // Check if there's a background image set
+            if (bgImage && bgImage !== 'none') {
+                // Extract the URL from the css string (removes 'url("...")' wrapper)
+                var imageUrl = bgImage.replace(/^url\(["']?/, '').replace(/["']?\)$/, '');
+                
+                $("#full-image").attr("src", imageUrl);
+                $('#image-viewer').show();
+                console.log("Image URL: " + imageUrl);
+                console.log("Modal display: " + $('#image-viewer').css('display'));
+            }
+             else {
+                console.log("No background image found!");
+            }
+        });
 
-        // using index [0] to take the first file from the array
-        console.log("IMAGE "+fileUploadInput)
-        const image = fileUploadInput.files[0];
-        console.log("IMAGE "+image)
+        function upload(n) {
+            const fileUploadInput = document.querySelectorAll('.file-uploader');
 
-        // check if the file selected is not an image file
-        if (!image.type.includes('image')) {
-            return alert('Only images are allowed!');
-        }
+            // using index [0] to take the first file from the array
+            console.log("IMAGE "+fileUploadInput)
+            const image = fileUploadInput[n].files[0];
+            console.log("IMAGE "+image)
 
-        // check if size (in bytes) exceeds 10 MB
-        if (image.size > 10_000_000) {
-            return alert('Maximum upload size is 10MB!');
-        }
-        const fileReader = new FileReader();
-        fileReader.readAsDataURL(image);
+            // check if the file selected is not an image file
+            if (!image.type.includes('image')) {
+                return alert('Only images are allowed!');
+            }
 
-        fileReader.onload = (fileReaderEvent) => {
-            const profilePicture = document.querySelector('.imagenes_paneles');
-            profilePicture.style.backgroundImage = `url(${fileReaderEvent.target.result})`;
-        }
+            // check if size (in bytes) exceeds 10 MB
+            if (image.size > 10_000_000) {
+                return alert('Maximum upload size is 10MB!');
+            }
+            const fileReader = new FileReader();
+            fileReader.readAsDataURL(image);
+
+            fileReader.onload = (fileReaderEvent) => {
+                const profilePicture = document.querySelectorAll('.imagenes_paneles');
+                profilePicture[n].style.backgroundImage = `url(${fileReaderEvent.target.result})`;
+                fileUploadInput[n].style.display="none";
+                profilePicture[n].setAttribute('data-image-url', imageUrl)
+            }
         }
 
         // --- 2. AUTHENTICATION ---

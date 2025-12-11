@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Egunerokoa</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet"  href="css.css">
+    
+    <style>
+    </style>
+</head>
+<body>
+    
+    <div id="loginOverlay" onload="login()">
+        <div class="card p-5" style="width: 400px;">
+            <h3 class="text-center mb-4"><i class="fas fa-user-shield"></i>Login Responsable</h3>
+            <div class="mb-3">
+                <label>Usuario</label>
+                <input type="text" id="username" class="form-control" placeholder="usuario">
+            </div>
+            <div class="mb-3">
+                <label>Password</label>
+                <input type="password" id="password" class="form-control" placeholder="contraseña">
+            </div>
+            <button onclick="login()" class="btn btn-primary w-100">Acceder</button>
+            <small class="text-muted text-center d-block mt-2">(Puedes usar cualquier texto, solo es una prueba)</small>
+        </div>
+    </div>
+
+    <div id="appContent" style="display:none;">
+        
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4">
+            <a class="navbar-brand" href="#"><i class="fas fa-network-wired"></i> Egunerokoa</a>
+            <div class="ms-auto">
+                <span class="text-light me-3" id="currentUser"></span>
+                <button onclick="exportReport()" class="btn btn-success btn-sm"><i class="fas fa-file-word"></i> Exportar DOCX</button>
+                <button onclick="logout()" class="btn btn-outline-light btn-sm ms-2">Logout</button>
+            </div>
+        </nav>
+
+        <div class="container-fluid mt-4">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <i class="fas fa-book"></i> Cuaderno de Bitacora 
+                        </div>
+                        <div class="card-body">
+                            <div class="input-group mb-3">
+                                <input type="text" id="bit-persona" class="form-control" placeholder="email de la persona">
+                                <input type="text" id="bit-horas" class="form-control" placeholder="Horas Solicitadas/Recuperar">
+                                <input type="text" id="bit-recuperar_horas" class="form-control" placeholder="¿Como va a recuperar?">
+                                <input type="text" id="bit-motivo" class="form-control" placeholder="Escribe que ha pasado">
+                                <input type="text" id="bit-baja" class="form-control" placeholder="¿Baja?">
+                                <select id="bit-tipo" class="form-select">
+                                    <option value="Retraso">Retraso</option>
+                                    <option value="Falta">Falta</option>
+                                    <option value="Enfermo">Enfermo</option>
+                                    <option value="LibrePorHoras">Libre por horas</option>
+                                    <option value="Formacion">Formacion</option>
+                                    <option value="Grave">Grave</option>
+                                </select>
+                                <button class="btn btn-primary" onclick="addBitacora()">Log</button>
+                            </div>
+
+                            <div class="scrollable-list border rounded p-2 bg-white">
+                                <ul id="bitacora-list" class="list-group list-group-flush small">
+                                    <li class="list-group-item text-muted text-center">No hay registros aun.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-12">
+                    
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-secondary text-white d-flex justify-content-between">
+                            <span><i class="fas fa-tasks"></i> Tareas Pendientes</span>
+                            <button class="btn btn-sm btn-light py-0" onclick="toggleTaskForm()">Nueva +</button>
+                        </div>
+                        <div class="card-body">
+                            <div id="taskForm" class="mb-3 p-3 bg-light border rounded" style="display:none;">
+                                <div class="row g-2">
+                                    <div class="col-md-8"><input type="text" id="task-desc" class="form-control" placeholder="Task Description"></div>
+                                    <div class="col-md-4"><input type="text" id="task-owner" class="form-control" placeholder="Assigned To"></div>
+                                    <div class="col-12"><button onclick="addTask()" class="btn btn-sm btn-dark w-100">Añadir Tarea</button></div>
+                                </div>
+                            </div>
+                            <table class="table table-hover small">
+                                <thead><tr><th>Tarea</th><th>Persona</th><th>Estado</th></tr></thead>
+                                <tbody id="task-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-secondary text-white">
+                            <i class="fas fa-handshake"></i> Reuniones del día
+                        </div>
+                        <div class="card-body">
+                             <div class="input-group mb-2">
+                                <input type="time" id="meet-time" class="form-control" style="max-width: 100px;">
+                                <input type="text" id="meet-name" class="form-control" placeholder="Meeting Topic">
+                                <button class="btn btn-secondary" onclick="addMeeting()">Añadir +</button>
+                            </div>
+                            <ul id="meeting-list" class="list-group small"></ul>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. STATE MANAGEMENT ---
+        // In a real app, this would come from MySQL via PHP
+        let appData = {
+            bitacora: [],
+            tasks: [],
+            meetings: [],
+            metrics: { calls: 10000000, nds: 0, nda: 0, ans: 0 }
+        };
+
+        //Bitacora form manager
+        const campo_email = document.getElementById('bit-persona');
+        const campo_horas = document.getElementById('bit-horas');
+        const campo_recuperar = document.getElementById('bit-recuperar_horas');
+        const campo_motivo = document.getElementById('bit-motivo');
+        const campo_baja = document.getElementById('bit-baja');
+        const bitacora_controller = document.getElementById('bit-tipo');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            campo_baja.style.display = "none";
+            console.log("Page Loaded removing baja");
+        });
+
+        bitacora_controller.addEventListener('change', (e) => {
+            console.log(e.target.value)
+
+            switch (e.target.value){
+            
+            case "Retraso":
+                console.log("Retraso")
+                campo_baja.style.display="none"
+                break;
+
+            case "Falta":
+                console.log("Falta")
+                campo_baja.style.display="none"
+                break;
+            case "Enfermo":
+                console.log("Enfermo")
+                campo_baja.style.display="inline"
+                break;
+            case "LibrePorHoras":
+                console.log("Libre Por Horas")
+                campo_horas.placeholder="Horas Solicitadas";
+                campo_baja.style.display="none"
+                campo_recuperar.style.display="none"
+                campo_motivo.style.display="none"
+                break;
+
+
+            default:
+                console.log("Test Default")
+                break;
+            }
+        });
+
+
+
+
+        // --- CM_DATOS MANAGEMENT
+
+        function changePanel(text){
+            document.getElementById("panelImagenes1").style.display = 'none';
+            document.getElementById("panelImagenes2").style.display = 'none';
+            document.getElementById("panelImagenes3").style.display = 'none';
+            document.getElementById(text).style.display = 'flex';
+            document.getElementById(text).style.gap = '20px';
+            console.log(text)
+        }
+
+
+        $(".images img").click(function(){
+            $("#full-image").attr("src", $(this).attr("src"));
+            $('#image-viewer').show();
+            });
+
+            $("#image-viewer .close").click(function(){
+            $('#image-viewer').hide();
+        });
+
+        $(".imagenes_paneles").click(function(){
+            // Get the background image URL from the CSS
+            var bgImage = $(this).css('background-image');
+            
+            console.log("CLICK ON IMAGE, bg-image: " + bgImage);
+            
+            // Check if there's a background image set
+            if (bgImage && bgImage !== 'none') {
+                // Extract the URL from the css string (removes 'url("...")' wrapper)
+                var imageUrl = bgImage.replace(/^url\(["']?/, '').replace(/["']?\)$/, '');
+                
+                $("#full-image").attr("src", imageUrl);
+                $('#image-viewer').show();
+                console.log("Image URL: " + imageUrl);
+                console.log("Modal display: " + $('#image-viewer').css('display'));
+            }
+             else {
+                console.log("No background image found!");
+            }
+        });
+
+        function upload(n) {
+            const fileUploadInput = document.querySelectorAll('.file-uploader');
+
+            // using index [0] to take the first file from the array
+            console.log("IMAGE "+fileUploadInput)
+            const image = fileUploadInput[n].files[0];
+            console.log("IMAGE "+image)
+
+            // check if the file selected is not an image file
+            if (!image.type.includes('image')) {
+                return alert('Only images are allowed!');
+            }
+
+            // check if size (in bytes) exceeds 10 MB
+            if (image.size > 10_000_000) {
+                return alert('Maximum upload size is 10MB!');
+            }
+            const fileReader = new FileReader();
+            fileReader.readAsDataURL(image);
+
+            fileReader.onload = (fileReaderEvent) => {
+                const profilePicture = document.querySelectorAll('.imagenes_paneles');
+                profilePicture[n].style.backgroundImage = `url(${fileReaderEvent.target.result})`;
+                fileUploadInput[n].style.display="none";
+                profilePicture[n].setAttribute('data-image-url', imageUrl)
+            }
+        }
+
+        // --- 2. AUTHENTICATION ---
+        function login() {
+            const user = document.getElementById('username').value;
+            if(user) {
+            }
+            //Esto va dentro del if pero es para cuando estoy trabajando
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('appContent').style.display = 'block';
+            document.getElementById('currentUser').innerText = `Welcome, ${user}`;
+        }
+
+        function logout() {
+            location.reload();
+        }
+
+        // --- 4. BITACORA LOGIC ---
+        function addBitacora() {
+            const name = document.getElementById('bit-servicio').value;
+            const servicioList = document.getElementById('bit-servicioList').value;
+            const descripcion = document.getElementById('bit-servicio').value;
+            const incidencia = document.getElementById('bit-incidencia').value;
+            const type = document.getElementById('bit-tipo').value;
+            const time = new Date().toLocaleTimeString();
+            appData.bitacora.push({ name, servicioList, descripcion, incidencia, type, time });
+            renderBitacora();
+            document.getElementById('bit-name').value = ''; // Clear input
+
+        }
+
+        function renderBitacora() {
+            const list = document.getElementById('bitacora-list');
+            
+            list.innerHTML = '';
+            appData.bitacora.forEach(item => {
+                console.log(item)
+                list.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span><strong>${item.name}</strong> - ${item.type}</span>
+                    <span><strong>${item.name}</strong> - ${item.type}</span>
+                    <span class="badge bg-light text-dark">${item.descripcion}</span>
+                    <span class="badge bg-light text-dark">-${item.time}</span>
+                </li>`;
+            });
+        }
+
+        // --- 5. TASKS LOGIC ---
+        function toggleTaskForm() {
+            const form = document.getElementById('taskForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function addTask() {
+            const desc = document.getElementById('task-desc').value;
+            const owner = document.getElementById('task-owner').value;
+            
+            if(desc) {
+                appData.tasks.push({ desc, owner, status: 'Pending' });
+                renderTasks();
+                document.getElementById('task-desc').value = '';
+                toggleTaskForm();
+            }
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('task-list');
+            list.innerHTML = '';
+            appData.tasks.forEach(item => {
+                list.innerHTML += `<tr>
+                    <td>${item.desc}</td>
+                    <td>${item.owner}</td>
+                    <td><span class="badge bg-warning text-dark">${item.status}</span></td>
+                </tr>`;
+            });
+        }
+
+        // --- 6. MEETINGS LOGIC ---
+        function addMeeting() {
+            const time = document.getElementById('meet-time').value;
+            const name = document.getElementById('meet-name').value;
+
+            if(name) {
+                appData.meetings.push({ time, name });
+                const list = document.getElementById('meeting-list');
+                list.innerHTML += `<li class="list-group-item"><i class="far fa-clock"></i> ${time} - ${name}</li>`;
+                document.getElementById('meet-name').value = '';
+            }
+        }
+
+        // --- 7. EXPORT TO DOCX (Client Side) ---
+        function exportReport() {
+            const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
+
+            // Generate Bitacora Text
+            const bitacoraRows = appData.bitacora.map(b => 
+                new Paragraph({ text: `• [${b.time}] ${b.name}: ${b.type}`, bullet: { level: 0 } })
+            );
+
+            // Generate Task Text
+            const taskRows = appData.tasks.map(t => 
+                new Paragraph({ text: `• ${t.desc} (${t.owner}) - ${t.status}`, bullet: { level: 0 } })
+            );
+
+            const doc = new Document({
+                sections: [{
+                    properties: {},
+                    children: [
+                        new Paragraph({ text: "Daily Operations Report", heading: HeadingLevel.TITLE }),
+                        new Paragraph({ text: `Date: ${new Date().toLocaleDateString()}`, heading: HeadingLevel.HEADING_2 }),
+                        
+                        new Paragraph({ text: " ", spacing: { before: 200 } }), // Spacer
+                        new Paragraph({ text: "1. Service Metrics (End of Day)", heading: HeadingLevel.HEADING_1 }),
+                        new Paragraph({ text: `Final Calls: ${appData.metrics.calls} | NDS: ${appData.metrics.nds}% | NDA: ${appData.metrics.nda}%` }),
+
+                        new Paragraph({ text: " ", spacing: { before: 200 } }),
+                        new Paragraph({ text: "2. Bitacora (HR & Incidents)", heading: HeadingLevel.HEADING_1 }),
+                        ...bitacoraRows,
+
+                        new Paragraph({ text: " ", spacing: { before: 200 } }),
+                        new Paragraph({ text: "3. Pending Tasks", heading: HeadingLevel.HEADING_1 }),
+                        ...taskRows,
+                    ],
+                }],
+            });
+
+            Packer.toBlob(doc).then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                document.body.appendChild(a);
+                a.style = "display: none";
+                a.href = url;
+                a.download = `Daily_Report_${new Date().toISOString().slice(0,10)}.docx`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+            });
+        }
+    </script>
+</body>
+</html>

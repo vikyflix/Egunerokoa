@@ -11,6 +11,24 @@
     <link rel="stylesheet"  href="css.css">
     
     <style>
+        .scrollable-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .form-field {
+            transition: all 0.3s ease;
+        }
+        .form-field.hidden {
+            display: none !important;
+        }
+        .bitacora-entry {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        .badge-tipo {
+            min-width: 120px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -44,32 +62,62 @@
 
         <div class="container-fluid mt-4">
             <div class="row">
+                <!-- IMPROVED BITACORA SECTION -->
                 <div class="col-lg-12">
                     <div class="card shadow-sm mb-4">
                         <div class="card-header bg-primary text-white">
-                            <i class="fas fa-book"></i> Cuaderno de Bitacora 
+                            <i class="fas fa-book"></i> Cuaderno de Bitácora 
                         </div>
                         <div class="card-body">
-                            <div class="input-group mb-3">
-                                <input type="text" id="bit-persona" class="form-control" placeholder="email de la persona">
-                                <input type="text" id="bit-horas" class="form-control" placeholder="Horas Solicitadas/Recuperar">
-                                <input type="text" id="bit-recuperar_horas" class="form-control" placeholder="¿Como va a recuperar?">
-                                <input type="text" id="bit-motivo" class="form-control" placeholder="Escribe que ha pasado">
-                                <input class="form-control form-check-input" type="checkbox" value="baja" id="bit-baja">
-                                <select id="bit-tipo" class="form-select">
-                                    <option value="Retraso">Retraso</option>
-                                    <option value="Falta">Falta</option>
-                                    <option value="Enfermo">Enfermo</option>
-                                    <option value="LibrePorHoras">Libre por horas</option>
-                                    <option value="Formacion">Formacion</option>
-                                    <option value="Grave">Grave</option>
-                                </select>
-                                <button class="btn btn-primary" onclick="addBitacora()">Log</button>
+                            <!-- Improved Form -->
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-3">
+                                    <select id="bit-tipo" class="form-select">
+                                        <option value="Retraso">Retraso</option>
+                                        <option value="Falta">Falta</option>
+                                        <option value="Enfermo">Enfermo</option>
+                                        <option value="LibrePorHoras">Libre por horas</option>
+                                        <option value="Formacion">Formación</option>
+                                        <option value="Grave">Grave</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-9">
+                                    <input type="email" id="bit-persona" class="form-control form-field" placeholder="Email de la persona">
+                                </div>
                             </div>
 
-                            <div class="scrollable-list border rounded p-2 bg-white">
-                                <ul id="bitacora-list" class="list-group list-group-flush small">
-                                    <li class="list-group-item text-muted text-center">No hay registros aun.</li>
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-4">
+                                    <input type="text" id="bit-horas" class="form-control form-field" placeholder="Horas solicitadas/recuperar">
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" id="bit-recuperar_horas" class="form-control form-field" placeholder="¿Cómo va a recuperar?">
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-field" id="bit-baja-container">
+                                        <input class="form-check-input" type="checkbox" value="baja" id="bit-baja">
+                                        <label class="form-check-label" for="bit-baja">
+                                            Baja médica
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-10">
+                                    <textarea id="bit-motivo" class="form-control form-field" rows="2" placeholder="Escribe qué ha pasado"></textarea>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button class="btn btn-primary w-100" onclick="addBitacora()">
+                                        <i class="fas fa-plus"></i> Registrar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- List -->
+                            <div class="scrollable-list border rounded p-3 bg-white">
+                                <ul id="bitacora-list" class="list-group list-group-flush">
+                                    <li class="list-group-item text-muted text-center">No hay registros aún.</li>
                                 </ul>
                             </div>
                         </div>
@@ -119,7 +167,6 @@
 
     <script>
         // --- 1. STATE MANAGEMENT ---
-        // In a real app, this would come from MySQL via PHP
         let appData = {
             bitacora: [],
             tasks: [],
@@ -127,80 +174,79 @@
             metrics: { calls: 10000000, nds: 0, nda: 0, ans: 0 }
         };
 
-        //Bitacora form manager
-        const campo_email = document.getElementById('bit-persona');
-        const campo_horas = document.getElementById('bit-horas');
-        const campo_recuperar = document.getElementById('bit-recuperar_horas');
-        const campo_motivo = document.getElementById('bit-motivo');
-        const campo_baja = document.getElementById('bit-baja');
-        const bitacora_controller = document.getElementById('bit-tipo');
+        // --- DOM ELEMENTS FOR IMPROVED FORM ---
+        const elements = {
+            persona: document.getElementById('bit-persona'),
+            horas: document.getElementById('bit-horas'),
+            recuperar: document.getElementById('bit-recuperar_horas'),
+            motivo: document.getElementById('bit-motivo'),
+            baja: document.getElementById('bit-baja'),
+            bajaContainer: document.getElementById('bit-baja-container'),
+            tipo: document.getElementById('bit-tipo')
+        };
 
-        document.addEventListener('DOMContentLoaded', () => {
-            campo_baja.style.display = "none";
-            console.log("Page Loaded removing baja");
-        });
-
-        bitacora_controller.addEventListener('change', (e) => {
-            console.log(e.target.value)
-                campo_baja.style.display="inline"
-                campo_recuperar.style.display="inline"
-                campo_motivo.style.display="inline"
-                campo_email.style.display="inline"
-                campo_horas.style.display="inline"
-
-            switch (e.target.value){
-            
-            case "Retraso":
-                console.log("Retraso")
-                campo_horas.placeholder="Tiempo retraso";
-                campo_baja.style.display="none"
-                break;
-
-            case "Falta":
-                console.log("Falta")
-                campo_horas.placeholder="Horas de falta";
-                campo_baja.style.display="none"
-                break;
-            case "Enfermo":
-                console.log("Enfermo")
-                campo_baja.style.display="inline"
-                break;
-            case "LibrePorHoras":
-                console.log("Libre Por Horas")
-                campo_horas.placeholder="Horas Solicitadas";
-                campo_baja.style.display="none"
-                campo_recuperar.style.display="none"
-                campo_motivo.style.display="none"
-                break;
-
-            case "Formacion":
-                console.log("Formacion")
-                campo_motivo.placeholder="¿Formacion?";
-                campo_baja.style.display="none"
-                campo_recuperar.style.display="none"
-                campo_horas.style.display="none"
-                break;
-
-            case "Grave":
-                console.log("Graves")
-                //campo_horas.placeholder="Horas Solicitadas";
-                campo_baja.style.display="none"
-                campo_recuperar.style.display="none"
-                campo_motivo.style.display="inline"
-                campo_email.style.display="none"
-                campo_horas.style.display="none"
-                break;
-
-
-            default:
-                console.log("Test Default")
-                break;
+        // --- FIELD CONFIGURATIONS ---
+        const fieldConfigs = {
+            'Retraso': {
+                fields: ['persona', 'horas', 'recuperar', 'motivo'],
+                placeholders: { horas: 'Tiempo de retraso' }
+            },
+            'Falta': {
+                fields: ['persona', 'horas', 'recuperar', 'motivo'],
+                placeholders: { horas: 'Horas de falta' }
+            },
+            'Enfermo': {
+                fields: ['persona', 'horas', 'recuperar', 'baja'],
+                placeholders: { horas: 'Horas solicitadas' }
+            },
+            'LibrePorHoras': {
+                fields: ['persona', 'horas'],
+                placeholders: { horas: 'Horas solicitadas' }
+            },
+            'Formacion': {
+                fields: ['persona', 'motivo'],
+                placeholders: { motivo: '¿Qué formación?' }
+            },
+            'Grave': {
+                fields: ['motivo'],
+                placeholders: { motivo: 'Describe el incidente grave' }
             }
+        };
+
+        // --- INITIALIZE ---
+        document.addEventListener('DOMContentLoaded', () => {
+            updateFormFields();
         });
 
+        // --- FORM FIELD MANAGEMENT ---
+        elements.tipo.addEventListener('change', updateFormFields);
 
-        // --- CM_DATOS MANAGEMENT
+        function updateFormFields() {
+            const tipo = elements.tipo.value;
+            const config = fieldConfigs[tipo];
+            
+            // Hide all fields first
+            ['persona', 'horas', 'recuperar', 'motivo'].forEach(field => {
+                elements[field].classList.add('hidden');
+            });
+            elements.bajaContainer.classList.add('hidden');
+            
+            // Show required fields
+            config.fields.forEach(field => {
+                if (field === 'baja') {
+                    elements.bajaContainer.classList.remove('hidden');
+                } else {
+                    elements[field].classList.remove('hidden');
+                }
+            });
+            
+            // Update placeholders
+            Object.keys(config.placeholders || {}).forEach(field => {
+                elements[field].placeholder = config.placeholders[field];
+            });
+        }
 
+        // --- CM_DATOS MANAGEMENT ---
         function changePanel(text){
             document.getElementById("panelImagenes1").style.display = 'none';
             document.getElementById("panelImagenes2").style.display = 'none';
@@ -210,33 +256,28 @@
             console.log(text)
         }
 
-
         $(".images img").click(function(){
             $("#full-image").attr("src", $(this).attr("src"));
             $('#image-viewer').show();
-            });
+        });
 
-            $("#image-viewer .close").click(function(){
+        $("#image-viewer .close").click(function(){
             $('#image-viewer').hide();
         });
 
         $(".imagenes_paneles").click(function(){
-            // Get the background image URL from the CSS
             var bgImage = $(this).css('background-image');
             
             console.log("CLICK ON IMAGE, bg-image: " + bgImage);
             
-            // Check if there's a background image set
             if (bgImage && bgImage !== 'none') {
-                // Extract the URL from the css string (removes 'url("...")' wrapper)
                 var imageUrl = bgImage.replace(/^url\(["']?/, '').replace(/["']?\)$/, '');
                 
                 $("#full-image").attr("src", imageUrl);
                 $('#image-viewer').show();
                 console.log("Image URL: " + imageUrl);
                 console.log("Modal display: " + $('#image-viewer').css('display'));
-            }
-             else {
+            } else {
                 console.log("No background image found!");
             }
         });
@@ -244,17 +285,14 @@
         function upload(n) {
             const fileUploadInput = document.querySelectorAll('.file-uploader');
 
-            // using index [0] to take the first file from the array
             console.log("IMAGE "+fileUploadInput)
             const image = fileUploadInput[n].files[0];
             console.log("IMAGE "+image)
 
-            // check if the file selected is not an image file
             if (!image.type.includes('image')) {
                 return alert('Only images are allowed!');
             }
 
-            // check if size (in bytes) exceeds 10 MB
             if (image.size > 10_000_000) {
                 return alert('Maximum upload size is 10MB!');
             }
@@ -274,7 +312,6 @@
             const user = document.getElementById('username').value;
             if(user) {
             }
-            //Esto va dentro del if pero es para cuando estoy trabajando
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('appContent').style.display = 'block';
             document.getElementById('currentUser').innerText = `Welcome, ${user}`;
@@ -284,26 +321,35 @@
             location.reload();
         }
 
-        // --- 4. BITACORA LOGIC ---
+        // --- 4. BITACORA LOGIC (IMPROVED) ---
         function addBitacora() {
-            const campo_email = document.getElementById('bit-persona').value;
-            const campo_horas = document.getElementById('bit-horas').value;
-            const campo_recuperar = document.getElementById('bit-recuperar_horas').value;
-            const campo_motivo = document.getElementById('bit-motivo').value;
-            const bitacora_controller = document.getElementById('bit-tipo').value;
+            const tipo = elements.tipo.value;
+            const config = fieldConfigs[tipo];
+            
+            // Validate required fields
+            let isValid = true;
+            config.fields.forEach(field => {
+                if (field !== 'baja' && !elements[field].value.trim()) {
+                    elements[field].classList.add('is-invalid');
+                    isValid = false;
+                } else if (field !== 'baja') {
+                    elements[field].classList.remove('is-invalid');
+                }
+            });
+            
+            if (!isValid) return;
 
-            const time = new Date().toLocaleTimeString();
-            const campo_baja = document.getElementById('bit-baja');
-            if(campo_baja.checked==true){
-                console.log("baja")
-                campo_baja.value="baja";
-            }else{
-                console.log("no baja")
-                campo_baja.value="";
-            }
-            const campo_baja_value = document.getElementById('bit-baja').value;
+            const entry = {
+                tipo: tipo,
+                persona: elements.persona.value,
+                horas: elements.horas.value,
+                recuperar: elements.recuperar.value,
+                motivo: elements.motivo.value,
+                baja: elements.baja.checked ? 'Sí' : 'No',
+                timestamp: new Date().toLocaleString('es-ES')
+            };
 
-            appData.bitacora.push({campo_email, campo_horas, campo_recuperar, campo_motivo, campo_baja_value, bitacora_controller, time});
+            appData.bitacora.push(entry);
             renderBitacora();
             clearInputs();
         }
@@ -311,89 +357,88 @@
         function renderBitacora() {
             const list = document.getElementById('bitacora-list');
             
-            list.innerHTML = '';
-            appData.bitacora.forEach(item => {
-                console.log(item)
-                switch (item.bitacora_controller){
-                
-                case "Retraso":
-                    console.log("Retraso")
-                    list.innerHTML += 
-                    `<li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><strong>${item.bitacora_controller}</strong> - ${item.campo_email}</span>
-                        <span><strong>Tiempo de retraso: </strong> - ${item.campo_horas}</span>
-                        <span><strong>Recuperar: </strong> - ${item.campo_recuperar}</span>
-                        <span><strong>Motivo: </strong> - ${item.campo_motivo}</span>
-                        <span> - ${item.time}</span>
-                    </li>`;
-                    break;
-
-                case "Falta":
-                    console.log("Falta")
-                    list.innerHTML += 
-                    `<li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><strong>${item.bitacora_controller}</strong> - ${item.campo_email}</span>
-                        <span><strong>Horas Solicitadas: </strong> - ${item.campo_horas}</span>
-                        <span><strong>Recuperar: </strong> - ${item.campo_recuperar}</span>
-                        <span><strong>Motivo: </strong> - ${item.campo_motivo}</span>
-                        <span> - ${item.time}</span>
-                    </li>`;
-                    break;
-                case "Enfermo":
-                    console.log("Enfermo")
-                    list.innerHTML += 
-                    `<li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><strong>${item.bitacora_controller}</strong> - ${item.campo_email}</span>
-                        <span><strong>Horas Solicitadas: </strong> - ${item.campo_horas}</span>
-                        <span><strong>Recuperar: </strong> - ${item.campo_recuperar}</span>
-                        <span><strong>Baja: </strong> - ${item.campo_baja_value}</span>
-                        <span> - ${item.time}</span>
-                    </li>`;
-                    break;
-                case "LibrePorHoras":
-                    list.innerHTML += 
-                    `<li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><strong>${item.bitacora_controller}</strong> - ${item.campo_email}</span>
-                        <span><strong>Horas Solicitadas: </strong> - ${item.campo}</span>
-                        <span> - ${item.time}</span>
-                    </li>`;
-                    break;
-
-                case "Formacion":
-                    list.innerHTML += 
-                    `<li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><strong>${item.bitacora_controller}</strong> - ${item.campo_email}</span>
-                        <span><strong>Formacion de: </strong> - ${item.campo_motivo}</span>
-                        <span> - ${item.time}</span>
-                    </li>`;
-                    break;
-
-                case "Grave":
-                    console.log("Graves")
-                    //campo_horas.placeholder="Horas Solicitadas";
-                    list.innerHTML += 
-                    `<li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span><strong>${item.bitacora_controller}</strong> - ${item.campo_motivo}</span>
-                        <span> - ${item.time}</span>
-                    </li>`;
-                    break;
-
-
-                default:
-                    console.log("Test Default")
-                    break;
-                }
-            });
-        }
-        function clearInputs(){
-
-            const campo_email = document.getElementById('bit-persona').value = '';
-            const campo_horas = document.getElementById('bit-horas').value = '';
-            const campo_recuperar = document.getElementById('bit-recuperar_horas').value = '';
-            const campo_motivo = document.getElementById('bit-motivo').value = '';
-        }
-        function hideInputs(){
+            if (appData.bitacora.length === 0) {
+                list.innerHTML = '<li class="list-group-item text-muted text-center">No hay registros aún.</li>';
+                return;
+            }
             
+            list.innerHTML = appData.bitacora.map(item => {
+                const badgeColor = {
+                    'Retraso': 'warning',
+                    'Falta': 'danger',
+                    'Enfermo': 'info',
+                    'LibrePorHoras': 'success',
+                    'Formacion': 'primary',
+                    'Grave': 'dark'
+                }[item.tipo];
+
+                let details = '';
+                
+                switch(item.tipo) {
+                    case 'Retraso':
+                        details = `
+                            <div><strong>Persona:</strong> ${item.persona}</div>
+                            <div><strong>Tiempo:</strong> ${item.horas} | <strong>Recuperar:</strong> ${item.recuperar}</div>
+                            <div><strong>Motivo:</strong> ${item.motivo}</div>
+                        `;
+                        break;
+                    case 'Falta':
+                        details = `
+                            <div><strong>Persona:</strong> ${item.persona}</div>
+                            <div><strong>Horas:</strong> ${item.horas} | <strong>Recuperar:</strong> ${item.recuperar}</div>
+                            <div><strong>Motivo:</strong> ${item.motivo}</div>
+                        `;
+                        break;
+                    case 'Enfermo':
+                        details = `
+                            <div><strong>Persona:</strong> ${item.persona}</div>
+                            <div><strong>Horas:</strong> ${item.horas} | <strong>Recuperar:</strong> ${item.recuperar}</div>
+                            <div><strong>Baja médica:</strong> ${item.baja}</div>
+                        `;
+                        break;
+                    case 'LibrePorHoras':
+                        details = `
+                            <div><strong>Persona:</strong> ${item.persona}</div>
+                            <div><strong>Horas solicitadas:</strong> ${item.horas}</div>
+                        `;
+                        break;
+                    case 'Formacion':
+                        details = `
+                            <div><strong>Persona:</strong> ${item.persona}</div>
+                            <div><strong>Formación:</strong> ${item.motivo}</div>
+                        `;
+                        break;
+                    case 'Grave':
+                        details = `
+                            <div><strong>Incidente:</strong> ${item.motivo}</div>
+                        `;
+                        break;
+                }
+
+                return `
+                    <li class="list-group-item bitacora-entry">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <span class="badge bg-${badgeColor} badge-tipo mb-2">${item.tipo}</span>
+                                ${details}
+                            </div>
+                            <small class="text-muted ms-3">${item.timestamp}</small>
+                        </div>
+                    </li>
+                `;
+            }).reverse().join('');
+        }
+
+        function clearInputs() {
+            elements.persona.value = '';
+            elements.horas.value = '';
+            elements.recuperar.value = '';
+            elements.motivo.value = '';
+            elements.baja.checked = false;
+            
+            [elements.persona, elements.horas, elements.recuperar, elements.motivo].forEach(el => {
+                el.classList.remove('is-invalid');
+            });
         }
 
         // --- 5. TASKS LOGIC ---
@@ -443,12 +488,10 @@
         function exportReport() {
             const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
 
-            // Generate Bitacora Text
             const bitacoraRows = appData.bitacora.map(b => 
-                new Paragraph({ text: `• [${b.time}] ${b.name}: ${b.type}`, bullet: { level: 0 } })
+                new Paragraph({ text: `• [${b.timestamp}] ${b.tipo} - ${b.persona || 'N/A'}`, bullet: { level: 0 } })
             );
 
-            // Generate Task Text
             const taskRows = appData.tasks.map(t => 
                 new Paragraph({ text: `• ${t.desc} (${t.owner}) - ${t.status}`, bullet: { level: 0 } })
             );
@@ -460,7 +503,7 @@
                         new Paragraph({ text: "Daily Operations Report", heading: HeadingLevel.TITLE }),
                         new Paragraph({ text: `Date: ${new Date().toLocaleDateString()}`, heading: HeadingLevel.HEADING_2 }),
                         
-                        new Paragraph({ text: " ", spacing: { before: 200 } }), // Spacer
+                        new Paragraph({ text: " ", spacing: { before: 200 } }),
                         new Paragraph({ text: "1. Service Metrics (End of Day)", heading: HeadingLevel.HEADING_1 }),
                         new Paragraph({ text: `Final Calls: ${appData.metrics.calls} | NDS: ${appData.metrics.nds}% | NDA: ${appData.metrics.nda}%` }),
 

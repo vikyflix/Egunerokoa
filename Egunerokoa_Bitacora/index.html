@@ -189,19 +189,19 @@
         const fieldConfigs = {
             'Retraso': {
                 fields: ['persona', 'horas', 'recuperar', 'motivo'],
-                placeholders: { horas: 'Tiempo de retraso' }
+                placeholders: { motivo: 'Tiempo de retraso' }
             },
             'Falta': {
                 fields: ['persona', 'horas', 'recuperar', 'motivo'],
-                placeholders: { horas: 'Horas de falta' }
+                placeholders: { motivo: 'Horas de falta' }
             },
             'Enfermo': {
                 fields: ['persona', 'horas', 'recuperar', 'baja'],
-                placeholders: { horas: 'Horas solicitadas' }
+                placeholders: { motivo: 'Horas solicitadas' }
             },
             'LibrePorHoras': {
                 fields: ['persona', 'horas'],
-                placeholders: { horas: 'Horas solicitadas' }
+                placeholders: { motivo: 'Horas solicitadas' }
             },
             'Formacion': {
                 fields: ['persona', 'motivo'],
@@ -224,7 +224,7 @@
         function updateFormFields() {
             const tipo = elements.tipo.value;
             const config = fieldConfigs[tipo];
-            
+
             // Hide all fields first
             ['persona', 'horas', 'recuperar', 'motivo'].forEach(field => {
                 elements[field].classList.add('hidden');

@@ -3,143 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Egunerokoa - Management System</title>
+    <title>Egunerokoa - Full Info System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
     <style>
-        body { background-color: #f4f7f6; }
-        .scrollable-list { max-height: 400px; overflow-y: auto; }
-        .quick-detail-form { display: none; padding: 15px; background-color: #f8f9fa; border-radius: 8px; margin-top: 10px; border: 1px solid #dee2e6; }
-        .quick-detail-form.active { display: block; }
-        .badge-tipo { min-width: 100px; padding: 8px 12px; font-size: 0.85rem; }
-        .quick-add-btn { width: 100%; padding: 12px; margin-bottom: 8px; text-align: left; border-left: 4px solid transparent; transition: 0.2s; }
-        .quick-add-btn:hover { border-left-color: #0d6efd; background-color: #e9ecef; }
-        #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; align-items: center; justify-content: center; }
-        .history-card { border-left: 5px solid #6c757d; margin-bottom: 10px; }
+        body { background-color: #f4f7f6; color: #2d3436; font-size: 0.95rem; }
+        .card { border-radius: 12px; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .quick-add-btn { 
+            width: 100%; padding: 15px; text-align: left; background: white; 
+            border: 1px solid #edf2f7; border-left: 5px solid #cbd5e0; 
+            transition: all 0.2s; font-weight: 600; margin-bottom: 10px;
+        }
+        .quick-add-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        .btn-retraso { border-left-color: #f6ad55; color: #dd6b20; }
+        .btn-falta { border-left-color: #fc8181; color: #e53e3e; }
+        .btn-enfermo { border-left-color: #63b3ed; color: #3182ce; }
+        .btn-libre { border-left-color: #68d391; color: #38a169; }
+        .btn-formacion { border-left-color: #b794f4; color: #805ad5; }
+        .btn-grave { border-left-color: #4a5568; color: #2d3748; }
+
+        .form-container { display: none; background: #fff; border: 2px solid #4a90e2; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .form-container.active { display: block; animation: fadeIn 0.3s; }
+        
+        .remove-btn { color: #feb2b2; cursor: pointer; transition: 0.2s; }
+        .remove-btn:hover { color: #f56565; }
+
+        #loginOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .data-label { font-weight: bold; color: #718096; font-size: 0.75rem; text-transform: uppercase; margin-right: 5px; }
+        .entry-detail { background: #f8fafc; padding: 2px 8px; border-radius: 4px; margin-right: 5px; display: inline-block; margin-bottom: 2px; }
     </style>
 </head>
 <body>
-    
+
     <div id="loginOverlay">
-        <div class="card p-5" style="width: 400px;">
-            <h3 class="text-center mb-4"><i class="fas fa-user-shield"></i> Login Responsable</h3>
-            <div class="mb-3">
-                <label>Usuario</label>
-                <input type="text" id="username" class="form-control" placeholder="usuario">
-            </div>
-            <div class="mb-3">
-                <label>Password</label>
-                <input type="password" id="password" class="form-control" placeholder="contraseña">
-            </div>
-            <button onclick="login()" class="btn btn-primary w-100">Acceder</button>
+        <div class="card p-5" style="width: 380px;">
+            <h4 class="text-center mb-4">Control de Acceso</h4>
+            <input type="password" id="pass" class="form-control mb-3" placeholder="Contraseña">
+            <button onclick="login()" class="btn btn-primary w-100">Entrar</button>
         </div>
     </div>
 
-    <div id="appContent" style="display:none;">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4">
-            <a class="navbar-brand" href="#"><i class="fas fa-network-wired"></i> Egunerokoa</a>
-            <div class="ms-auto d-flex align-items-center">
-                <span class="text-light me-3" id="currentUser"></span>
-                <button onclick="exportReport()" class="btn btn-success btn-sm"><i class="fas fa-file-word"></i> Exportar DOCX</button>
-                <button onclick="logout()" class="btn btn-outline-light btn-sm ms-2">Logout</button>
-            </div>
+    <div id="mainApp" style="display:none">
+        <nav class="navbar navbar-dark bg-dark px-4 mb-4">
+            <span class="navbar-brand mb-0 h1"><i class="fas fa-database me-2"></i> Egunerokoa</span>
+            <button onclick="exportJSON()" class="btn btn-outline-info btn-sm">Download JSON Backup</button>
         </nav>
 
-        <div class="container-fluid mt-4">
+        <div class="container-fluid">
             <div class="row">
-                <div class="col-lg-8">
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-primary text-white">
-                            <i class="fas fa-clipboard-check"></i> Registrar Incidencia de Hoy
+                <div class="col-md-8">
+                    <div class="card p-4 mb-4">
+                        <h5 class="mb-4">Registrar Incidencia</h5>
+                        <div class="row">
+                            <div class="col-md-4"><button class="quick-add-btn btn-retraso" onclick="setupForm('Retraso')"> Retraso</button></div>
+                            <div class="col-md-4"><button class="quick-add-btn btn-falta" onclick="setupForm('Falta')"> Falta</button></div>
+                            <div class="col-md-4"><button class="quick-add-btn btn-enfermo" onclick="setupForm('Enfermo')"> Enfermo</button></div>
+                            <div class="col-md-4"><button class="quick-add-btn btn-libre" onclick="setupForm('LibrePorHoras')">Libre por horas</button></div>
+                            <div class="col-md-4"><button class="quick-add-btn btn-formacion" onclick="setupForm('Formacion')"> Formación</button></div>
+                            <div class="col-md-4"><button class="quick-add-btn btn-grave" onclick="setupForm('Grave')"> Grave</button></div>
                         </div>
-                        <div class="card-body">
-                            <div class="row g-2">
-                                <div class="col-md-4"><button class="btn btn-outline-warning quick-add-btn" onclick="openIncidentForm('Retraso')"><i class="fas fa-clock"></i> Retraso</button></div>
-                                <div class="col-md-4"><button class="btn btn-outline-danger quick-add-btn" onclick="openIncidentForm('Falta')"><i class="fas fa-user-times"></i> Falta</button></div>
-                                <div class="col-md-4"><button class="btn btn-outline-info quick-add-btn" onclick="openIncidentForm('Enfermo')"><i class="fas fa-notes-medical"></i> Enfermo</button></div>
-                                <div class="col-md-4"><button class="btn btn-outline-success quick-add-btn" onclick="openIncidentForm('LibrePorHoras')"><i class="fas fa-calendar-check"></i> Libre por horas</button></div>
-                                <div class="col-md-4"><button class="btn btn-outline-primary quick-add-btn" onclick="openIncidentForm('Formacion')"><i class="fas fa-graduation-cap"></i> Formación</button></div>
-                                <div class="col-md-4"><button class="btn btn-outline-dark quick-add-btn" onclick="openIncidentForm('Grave')"><i class="fas fa-exclamation-triangle"></i> Incidente Grave</button></div>
-                            </div>
 
-                            <div id="detailForm" class="quick-detail-form shadow-sm">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h6 class="mb-0"><span class="badge badge-tipo" id="formBadge">Tipo</span> Detalles</h6>
-                                    <button class="btn btn-sm text-danger" onclick="closeIncidentForm()"><i class="fas fa-times"></i></button>
-                                </div>
-                                <div class="row g-2" id="dynamicFields"></div>
-                                <button class="btn btn-primary w-100 mt-3" onclick="submitIncident()">Registrar en Bitácora</button>
+                        <div id="dynamicForm" class="form-container shadow">
+                            <h6 id="formTitle" class="fw-bold mb-3"></h6>
+                            <div id="formFields" class="row g-3"></div>
+                            <div class="mt-4">
+                                <button class="btn btn-primary px-4" onclick="saveEntry()">Guardar en Bitácora</button>
+                                <button class="btn btn-light" onclick="$('#dynamicForm').removeClass('active')">Cancelar</button>
                             </div>
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6">
-                            <div class="card shadow-sm mb-4">
-                                <div class="card-header bg-secondary text-white d-flex justify-content-between">
-                                    <span><i class="fas fa-tasks"></i> Tareas</span>
-                                    <button class="btn btn-sm btn-light py-0" onclick="toggleTaskForm()">+</button>
+                            <div class="card p-3 mb-4">
+                                <h6 class="fw-bold border-bottom pb-2">Tareas del Día</h6>
+                                <div class="input-group input-group-sm mb-3">
+                                    <input type="text" id="t-desc" class="form-control" placeholder="Nueva tarea...">
+                                    <button class="btn btn-dark" onclick="quickEntry('tasks', {desc: $('#t-desc').val()})">Añadir</button>
                                 </div>
-                                <div class="card-body">
-                                    <div id="taskForm" class="mb-3 p-2 bg-light border rounded" style="display:none;">
-                                        <input type="text" id="task-desc" class="form-control form-control-sm mb-1" placeholder="Tarea">
-                                        <input type="text" id="task-owner" class="form-control form-control-sm mb-1" placeholder="Responsable">
-                                        <button onclick="addTask()" class="btn btn-sm btn-dark w-100">Añadir</button>
-                                    </div>
-                                    <table class="table table-sm small">
-                                        <tbody id="task-list"></tbody>
-                                    </table>
-                                </div>
+                                <div id="list-tasks"></div>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="card shadow-sm mb-4">
-                                <div class="card-header bg-secondary text-white">
-                                    <i class="fas fa-handshake"></i> Reuniones
+                            <div class="card p-3 mb-4">
+                                <h6 class="fw-bold border-bottom pb-2">Reuniones</h6>
+                                <div class="input-group input-group-sm mb-3">
+                                    <input type="time" id="m-time" class="form-control">
+                                    <input type="text" id="m-name" class="form-control" placeholder="Asunto...">
+                                    <button class="btn btn-dark" onclick="quickEntry('meetings', {time: $('#m-time').val(), name: $('#m-name').val()})">+</button>
                                 </div>
-                                <div class="card-body">
-                                    <div class="input-group input-group-sm mb-2">
-                                        <input type="time" id="meet-time" class="form-control">
-                                        <input type="text" id="meet-name" class="form-control" placeholder="Tema">
-                                        <button class="btn btn-secondary" onclick="addMeeting()">+</button>
-                                    </div>
-                                    <ul id="meeting-list" class="list-group list-group-flush small"></ul>
-                                </div>
+                                <div id="list-meetings"></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-lg-4">
-                    <div class="card shadow-sm border-primary">
-                        <div class="card-header bg-primary text-white">
-                            <i class="fas fa-list-check"></i> Resumen de Hoy
-                            <span class="badge bg-white text-primary float-end" id="incidentCount">0</span>
+                <div class="col-md-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white fw-bold d-flex justify-content-between">
+                            <span>Actividad de Hoy</span>
+                            <span class="badge bg-primary" id="todayCount">0</span>
                         </div>
                         <div class="card-body p-0">
-                            <div class="scrollable-list">
-                                <ul id="bitacora-list" class="list-group list-group-flush"></ul>
-                            </div>
+                            <div id="list-bitacora" class="list-group list-group-flush"></div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-12 mt-4">
-                    <div class="card shadow-sm mb-5 border-dark">
+            <div class="row mt-5">
+                <div class="col-12 mb-5">
+                    <div class="card border-0 shadow-lg">
                         <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                            <span><i class="fas fa-history"></i> Control de Seguimiento (Historial de Días Previos)</span>
-                            <div class="d-flex align-items-center">
-                                <label class="me-2 small">Seleccionar Fecha:</label>
-                                <input type="date" id="historyDateFilter" class="form-control form-control-sm" style="width:200px">
-                            </div>
+                            <span><i class="fas fa-history me-2"></i> Auditoría de Días Previos</span>
+                            <input type="date" id="histDate" class="form-control form-control-sm w-auto">
                         </div>
-                        <div class="card-body">
-                            <div id="historyResults" class="row">
-                                <p class="text-center text-muted py-4">Seleccione una fecha para auditar los registros de ese día.</p>
-                            </div>
+                        <div class="card-body bg-light" id="histContent">
+                            <p class="text-center text-muted my-5">Seleccione una fecha para ver el reporte completo.</p>
                         </div>
                     </div>
                 </div>
@@ -148,148 +131,137 @@
     </div>
 
     <script>
-        // --- PERSISTENCE LOGIC (The "JSON File") ---
-        let appData = JSON.parse(localStorage.getItem('egunerokoa_storage')) || {
-            bitacora: [],
-            tasks: [],
-            meetings: []
+        let data = JSON.parse(localStorage.getItem('egunerokoa_v3')) || { bitacora: [], tasks: [], meetings: [] };
+        const sync = () => { localStorage.setItem('egunerokoa_v3', JSON.stringify(data)); render(); };
+
+        const config = {
+            'Retraso': { color: 'text-warning', fields: [{n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}, {n:'r', l:'Recuperación', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
+            'Falta': { color: 'text-danger', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
+            'Enfermo': { color: 'text-info', fields: [{n:'p', l:'Persona', t:'text'}, {n:'baja', l:'¿Tiene Baja Médica?', t:'check'}] },
+            'LibrePorHoras': { color: 'text-success', fields: [{n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}] },
+            'Formacion': { color: 'text-primary', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Curso', t:'text'}] },
+            'Grave': { color: 'text-dark', fields: [{n:'m', l:'Descripción', t:'text'}] }
         };
 
-        function saveData() {
-            localStorage.setItem('egunerokoa_storage', JSON.stringify(appData));
-        }
+        let activeCat = null;
+        function login() { $('#loginOverlay').hide(); $('#mainApp').show(); render(); }
 
-        let currentIncidentType = null;
-
-        const incidentConfigs = {
-            'Retraso': { badge: 'bg-warning text-dark', icon: 'fa-clock', fields: [{ id: 'persona', label: 'Email Persona', type: 'email', required: true, col: 12 }, { id: 'horas', label: 'Tiempo Retraso', type: 'text', required: true, col: 6 }, { id: 'recuperar', label: '¿Cómo recupera?', type: 'text', required: true, col: 6 }, { id: 'motivo', label: 'Motivo', type: 'textarea', required: true, col: 12 }] },
-            'Falta': { badge: 'bg-danger', icon: 'fa-user-times', fields: [{ id: 'persona', label: 'Email Persona', type: 'email', required: true, col: 12 }, { id: 'horas', label: 'Horas', type: 'text', required: true, col: 6 }, { id: 'motivo', label: 'Motivo', type: 'textarea', required: true, col: 12 }] },
-            'Enfermo': { badge: 'bg-info', icon: 'fa-notes-medical', fields: [{ id: 'persona', label: 'Email Persona', type: 'email', required: true, col: 12 }, { id: 'baja', label: '¿Tiene Baja Médica?', type: 'checkbox', col: 12 }] },
-            'LibrePorHoras': { badge: 'bg-success', icon: 'fa-calendar-check', fields: [{ id: 'persona', label: 'Email', type: 'email', required: true, col: 8 }, { id: 'horas', label: 'Horas', type: 'text', required: true, col: 4 }] },
-            'Formacion': { badge: 'bg-primary', icon: 'fa-graduation-cap', fields: [{ id: 'persona', label: 'Email', type: 'email', required: true, col: 12 }, { id: 'motivo', label: 'Curso/Tema', type: 'text', required: true, col: 12 }] },
-            'Grave': { badge: 'bg-dark', icon: 'fa-exclamation-triangle', fields: [{ id: 'motivo', label: 'Descripción del suceso', type: 'textarea', required: true, col: 12 }] }
-        };
-
-        // --- AUTH ---
-        function login() {
-            const user = document.getElementById('username').value || "Manager";
-            document.getElementById('loginOverlay').style.display = 'none';
-            document.getElementById('appContent').style.display = 'block';
-            document.getElementById('currentUser').innerHTML = `<i class="fas fa-user-circle"></i> ${user}`;
-            renderAll();
-        }
-
-        function logout() { location.reload(); }
-
-        // --- CORE FUNCTIONS ---
-        function openIncidentForm(tipo) {
-            currentIncidentType = tipo;
-            const config = incidentConfigs[tipo];
-            const badge = document.getElementById('formBadge');
-            const fieldsContainer = document.getElementById('dynamicFields');
-            
-            badge.className = `badge badge-tipo ${config.badge}`;
-            badge.innerHTML = `<i class="fas ${config.icon}"></i> ${tipo}`;
-            
-            fieldsContainer.innerHTML = config.fields.map(f => `
-                <div class="col-${f.col}">
-                    <label class="small fw-bold">${f.label}</label>
-                    ${f.type === 'textarea' ? `<textarea id="field_${f.id}" class="form-control form-control-sm"></textarea>` : 
-                      f.type === 'checkbox' ? `<input type="checkbox" id="field_${f.id}" class="form-check-input d-block">` :
-                      `<input type="${f.type}" id="field_${f.id}" class="form-control form-control-sm">`}
+        function setupForm(cat) {
+            activeCat = cat;
+            $('#formTitle').html(`<span class="${config[cat].color}">${cat}</span>`);
+            $('#formFields').html(config[cat].fields.map(f => `
+                <div class="${f.t === 'check' ? 'col-12' : 'col-md-6'}">
+                    ${f.t === 'check' ? `
+                        <div class="form-check p-3 border rounded bg-light mt-2">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="in_${f.n}">
+                            <label class="form-check-label fw-bold" for="in_${f.n}">${f.l}</label>
+                        </div>
+                    ` : `
+                        <label class="small fw-bold text-muted">${f.l}</label>
+                        <input id="in_${f.n}" class="form-control">
+                    `}
                 </div>
-            `).join('');
-            
-            document.getElementById('detailForm').classList.add('active');
+            `).join(''));
+            $('#dynamicForm').addClass('active');
         }
 
-        function submitIncident() {
-            const config = incidentConfigs[currentIncidentType];
-            const entry = { tipo: currentIncidentType, timestamp: new Date().toLocaleString('es-ES'), dateOnly: new Date().toLocaleDateString('en-CA') };
-            
-            config.fields.forEach(f => {
-                const el = document.getElementById(`field_${f.id}`);
-                entry[f.id] = f.type === 'checkbox' ? el.checked : el.value;
+        function saveEntry() {
+            let entry = { id: Date.now(), type: activeCat, date: today(), time: now() };
+            config[activeCat].fields.forEach(f => {
+                const el = $(`#in_${f.n}`);
+                entry[f.n] = f.t === 'check' ? el.is(':checked') : el.val();
             });
-
-            appData.bitacora.push(entry);
-            saveData();
-            renderBitacora();
-            closeIncidentForm();
+            data.bitacora.push(entry);
+            $('#dynamicForm').removeClass('active');
+            sync();
         }
 
-        function renderBitacora() {
-            const list = document.getElementById('bitacora-list');
-            const today = new Date().toLocaleDateString('en-CA');
-            const todayEntries = appData.bitacora.filter(e => e.dateOnly === today);
-            
-            document.getElementById('incidentCount').innerText = todayEntries.length;
-            list.innerHTML = todayEntries.reverse().map(e => `
-                <li class="list-group-item">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <span class="badge ${incidentConfigs[e.tipo].badge} mb-1">${e.tipo}</span>
-                        <small class="text-muted">${e.timestamp.split(',')[1]}</small>
-                    </div>
-                    <div class="small text-truncate">${e.persona || ''} ${e.motivo || ''}</div>
-                </li>
-            `).join('') || '<li class="p-3 text-center text-muted">Sin registros hoy</li>';
+        function quickEntry(cat, obj) {
+            if(!Object.values(obj)[0]) return;
+            obj.id = Date.now(); obj.date = today();
+            data[cat].push(obj); sync();
+            $('#t-desc, #m-name').val('');
         }
 
-        // --- MANAGER HISTORY ---
-        document.getElementById('historyDateFilter').addEventListener('change', function(e) {
-            const selectedDate = e.target.value; // YYYY-MM-DD
-            const results = document.getElementById('historyResults');
-            const filtered = appData.bitacora.filter(entry => entry.dateOnly === selectedDate);
-
-            if (filtered.length === 0) {
-                results.innerHTML = `<div class="col-12 text-center text-danger py-4"><i class="fas fa-search"></i> No se encontraron registros para el día ${selectedDate}</div>`;
-                return;
+        function remove(id, cat) {
+            if(confirm('¿Eliminar este registro permanentemente?')) {
+                data[cat] = data[cat].filter(i => i.id !== id);
+                sync();
+                if($('#histDate').val()) loadHistory($('#histDate').val());
             }
+        }
 
-            results.innerHTML = filtered.map(e => `
-                <div class="col-md-4">
-                    <div class="card history-card shadow-sm p-2">
-                        <div class="fw-bold border-bottom mb-1 pb-1 d-flex justify-content-between">
-                            <span><i class="fas ${incidentConfigs[e.tipo].icon}"></i> ${e.tipo}</span>
-                            <span class="small text-muted">${e.timestamp.split(',')[1]}</span>
-                        </div>
-                        <div class="small">
-                            ${e.persona ? `<div><strong>Persona:</strong> ${e.persona}</div>` : ''}
-                            ${e.motivo ? `<div><strong>Detalle:</strong> ${e.motivo}</div>` : ''}
-                            ${e.horas ? `<div><strong>Tiempo:</strong> ${e.horas}</div>` : ''}
-                        </div>
+        // --- HELPER TO RENDER FULL DETAILS ---
+        function getDetailHtml(e) {
+            let html = '';
+            const conf = config[e.type];
+            conf.fields.forEach(f => {
+                const val = e[f.n];
+                if(f.t === 'check') {
+                    if(val) html += `<span class="badge bg-danger">CON BAJA</span> `;
+                } else if(val) {
+                    html += `<div class="entry-detail"><span class="data-label">${f.l}:</span>${val}</div>`;
+                }
+            });
+            return html;
+        }
+
+        function render() {
+            const isToday = (e) => e.date === today();
+            const todayBits = data.bitacora.filter(isToday);
+            $('#todayCount').text(todayBits.length);
+
+            $('#list-bitacora').html(todayBits.reverse().map(e => `
+                <div class="list-group-item p-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-bold ${config[e.type].color}"><i class="fas fa-circle small me-1"></i> ${e.type}</span>
+                        <span class="text-muted small">${e.time}</span>
+                    </div>
+                    <div class="small text-secondary">
+                        ${getDetailHtml(e)}
+                    </div>
+                    <div class="text-end mt-1"><i class="fas fa-trash-alt remove-btn" onclick="remove(${e.id}, 'bitacora')"></i></div>
+                </div>
+            `).join('') || '<p class="text-center text-muted p-4">No hay registros hoy</p>');
+
+            $('#list-tasks').html(data.tasks.filter(isToday).map(e => `<div class="d-flex justify-content-between border-bottom py-2 small"><span>• ${e.desc}</span><i class="fas fa-times remove-btn" onclick="remove(${e.id}, 'tasks')"></i></div>`).join(''));
+            $('#list-meetings').html(data.meetings.filter(isToday).map(e => `<div class="d-flex justify-content-between border-bottom py-2 small"><span><b>${e.time}</b> ${e.name}</span><i class="fas fa-times remove-btn" onclick="remove(${e.id}, 'meetings')"></i></div>`).join(''));
+        }
+
+        function loadHistory(d) {
+            const filter = (arr) => arr.filter(x => x.date === d);
+            const b = filter(data.bitacora);
+            const t = filter(data.tasks);
+            const m = filter(data.meetings);
+
+            $('#histContent').html(`
+                <div class="row">
+                    <div class="col-md-5 border-end"><h6><i class="fas fa-list"></i> Actividad</h6>
+                        ${b.map(e => `<div class="p-3 bg-white rounded mb-2 small shadow-sm">
+                            <div class="d-flex justify-content-between"><b>${e.time}</b> <span class="${config[e.type].color} fw-bold">${e.type}</span></div>
+                            <div class="mt-1">${getDetailHtml(e)}</div>
+                            <i class="fas fa-trash-alt remove-btn float-end mt-1" onclick="remove(${e.id}, 'bitacora')"></i>
+                        </div>`).join('') || '---'}
+                    </div>
+                    <div class="col-md-3 border-end"><h6><i class="fas fa-check-square"></i> Tareas</h6>
+                        ${t.map(e => `<div class="p-2 bg-white rounded mb-1 small shadow-sm">${e.desc} <i class="fas fa-trash-alt remove-btn float-end" onclick="remove(${e.id}, 'tasks')"></i></div>`).join('') || '---'}
+                    </div>
+                    <div class="col-md-4"><h6><i class="fas fa-handshake"></i> Reuniones</h6>
+                        ${m.map(e => `<div class="p-2 bg-white rounded mb-1 small shadow-sm"><b>${e.time}</b> ${e.name} <i class="fas fa-trash-alt remove-btn float-end" onclick="remove(${e.id}, 'meetings')"></i></div>`).join('') || '---'}
                     </div>
                 </div>
-            `).join('');
-        });
-
-        // --- TASKS & MEETINGS ---
-        function addTask() {
-            appData.tasks.push({ desc: $('#task-desc').val(), owner: $('#task-owner').val() });
-            saveData(); renderTasks(); $('#taskForm').hide();
-        }
-        function renderTasks() {
-            $('#task-list').html(appData.tasks.map(t => `<tr><td>${t.desc}</td><td class="text-end text-muted">${t.owner}</td></tr>`).join(''));
-        }
-        function addMeeting() {
-            appData.meetings.push({ time: $('#meet-time').val(), name: $('#meet-name').val() });
-            saveData(); renderMeetings();
-        }
-        function renderMeetings() {
-            $('#meeting-list').html(appData.meetings.map(m => `<li class="list-group-item p-1 border-0">• <strong>${m.time}</strong> ${m.name}</li>`).join(''));
+            `);
         }
 
-        // --- UTILS ---
-        function closeIncidentForm() { document.getElementById('detailForm').classList.remove('active'); }
-        function toggleTaskForm() { $('#taskForm').toggle(); }
-        function renderAll() { renderBitacora(); renderTasks(); renderMeetings(); }
-
-        // DOCX EXPORT (Simplified for this version)
-        function exportReport() {
-            alert("Generando reporte de los datos almacenados en el JSON local...");
-            // Uses the same logic as your original code
-            // (Standard docx.js implementation remains here)
+        const today = () => new Date().toLocaleDateString('en-CA');
+        const now = () => new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        function exportJSON() {
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `Egunerokoa_Backup_${today()}.json`; a.click();
         }
+        $('#histDate').on('change', function() { loadHistory($(this).val()); });
     </script>
 </body>
 </html>

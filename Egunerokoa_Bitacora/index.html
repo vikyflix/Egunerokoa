@@ -12,22 +12,49 @@
     
     <style>
         .scrollable-list {
-            max-height: 400px;
+            max-height: 500px;
             overflow-y: auto;
         }
-        .form-field {
-            transition: all 0.3s ease;
+        .incident-card {
+            transition: all 0.2s;
+            cursor: pointer;
+            border-left: 4px solid transparent;
         }
-        .form-field.hidden {
-            display: none !important;
+        .incident-card:hover {
+            background-color: #f8f9fa;
+            border-left-color: #0d6efd;
         }
-        .bitacora-entry {
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
+        .incident-card.selected {
+            background-color: #e7f1ff;
+            border-left-color: #0d6efd;
+        }
+        .quick-detail-form {
+            display: none;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .quick-detail-form.active {
+            display: block;
         }
         .badge-tipo {
-            min-width: 120px;
-            text-align: center;
+            min-width: 100px;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+        }
+        .bitacora-summary {
+            font-size: 0.9rem;
+        }
+        .quick-add-btn {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 8px;
+            text-align: left;
+            border-left: 4px solid transparent;
+        }
+        .quick-add-btn:hover {
+            border-left-color: #0d6efd;
         }
     </style>
 </head>
@@ -62,111 +89,144 @@
 
         <div class="container-fluid mt-4">
             <div class="row">
-                <!-- IMPROVED BITACORA SECTION -->
-                <div class="col-lg-12">
+                <!-- CHECKLIST-STYLE BITACORA -->
+                <div class="col-lg-8">
                     <div class="card shadow-sm mb-4">
                         <div class="card-header bg-primary text-white">
-                            <i class="fas fa-book"></i> Cuaderno de Bitácora 
+                            <i class="fas fa-clipboard-check"></i> Bitácora del Día - Checklist de Incidencias
                         </div>
                         <div class="card-body">
-                            <!-- Improved Form -->
-                            <div class="row g-2 mb-3">
-                                <div class="col-md-3">
-                                    <select id="bit-tipo" class="form-select">
-                                        <option value="Retraso">Retraso</option>
-                                        <option value="Falta">Falta</option>
-                                        <option value="Enfermo">Enfermo</option>
-                                        <option value="LibrePorHoras">Libre por horas</option>
-                                        <option value="Formacion">Formación</option>
-                                        <option value="Grave">Grave</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-9">
-                                    <input type="email" id="bit-persona" class="form-control form-field" placeholder="Email de la persona">
-                                </div>
-                            </div>
+                            <p class="text-muted mb-3">
+                                <i class="fas fa-info-circle"></i> 
+                                Selecciona el tipo de incidencia que ocurrió ayer y completa los detalles
+                            </p>
 
-                            <div class="row g-2 mb-3">
+                            <!-- Quick Add Buttons -->
+                            <div class="row g-2">
                                 <div class="col-md-4">
-                                    <input type="text" id="bit-horas" class="form-control form-field" placeholder="Horas solicitadas/recuperar">
+                                    <button class="btn btn-outline-warning quick-add-btn" onclick="openIncidentForm('Retraso')">
+                                        <i class="fas fa-clock"></i> Retraso
+                                    </button>
                                 </div>
                                 <div class="col-md-4">
-                                    <input type="text" id="bit-recuperar_horas" class="form-control form-field" placeholder="¿Cómo va a recuperar?">
+                                    <button class="btn btn-outline-danger quick-add-btn" onclick="openIncidentForm('Falta')">
+                                        <i class="fas fa-user-times"></i> Falta
+                                    </button>
                                 </div>
                                 <div class="col-md-4">
-                                    <div class="form-check form-field" id="bit-baja-container">
-                                        <input class="form-check-input" type="checkbox" value="baja" id="bit-baja">
-                                        <label class="form-check-label" for="bit-baja">
-                                            Baja médica
-                                        </label>
-                                    </div>
+                                    <button class="btn btn-outline-info quick-add-btn" onclick="openIncidentForm('Enfermo')">
+                                        <i class="fas fa-notes-medical"></i> Enfermo
+                                    </button>
                                 </div>
-                            </div>
-
-                            <div class="row g-2 mb-3">
-                                <div class="col-md-10">
-                                    <textarea id="bit-motivo" class="form-control form-field" rows="2" placeholder="Escribe qué ha pasado"></textarea>
+                                <div class="col-md-4">
+                                    <button class="btn btn-outline-success quick-add-btn" onclick="openIncidentForm('LibrePorHoras')">
+                                        <i class="fas fa-calendar-check"></i> Libre por horas
+                                    </button>
                                 </div>
-                                <div class="col-md-2 d-flex align-items-end">
-                                    <button class="btn btn-primary w-100" onclick="addBitacora()">
-                                        <i class="fas fa-plus"></i> Registrar
+                                <div class="col-md-4">
+                                    <button class="btn btn-outline-primary quick-add-btn" onclick="openIncidentForm('Formacion')">
+                                        <i class="fas fa-graduation-cap"></i> Formación
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-outline-dark quick-add-btn" onclick="openIncidentForm('Grave')">
+                                        <i class="fas fa-exclamation-triangle"></i> Incidente Grave
                                     </button>
                                 </div>
                             </div>
 
-                            <!-- List -->
-                            <div class="scrollable-list border rounded p-3 bg-white">
+                            <!-- Dynamic Detail Form -->
+                            <div id="detailForm" class="quick-detail-form">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0">
+                                        <span class="badge badge-tipo" id="formBadge">Tipo</span>
+                                        Detalles de la incidencia
+                                    </h6>
+                                    <button class="btn btn-sm btn-link text-danger" onclick="closeIncidentForm()">
+                                        <i class="fas fa-times"></i> Cancelar
+                                    </button>
+                                </div>
+
+                                <div class="row g-2" id="dynamicFields">
+                                    <!-- Fields will be injected here -->
+                                </div>
+
+                                <button class="btn btn-primary w-100 mt-3" onclick="submitIncident()">
+                                    <i class="fas fa-check"></i> Registrar Incidencia
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUMMARY/LIST SECTION -->
+                <div class="col-lg-4">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-secondary text-white">
+                            <i class="fas fa-list-check"></i> Resumen del Día
+                            <span class="badge bg-light text-dark float-end" id="incidentCount">0</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="scrollable-list">
                                 <ul id="bitacora-list" class="list-group list-group-flush">
-                                    <li class="list-group-item text-muted text-center">No hay registros aún.</li>
+                                    <li class="list-group-item text-muted text-center py-4">
+                                        <i class="fas fa-clipboard-list fa-2x mb-2 d-block"></i>
+                                        No hay incidencias registradas
+                                    </li>
                                 </ul>
                             </div>
                         </div>
                     </div>
                 </div>
 
+                <!-- TASKS & MEETINGS -->
                 <div class="col-lg-12">
-                    
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-secondary text-white d-flex justify-content-between">
-                            <span><i class="fas fa-tasks"></i> Tareas Pendientes</span>
-                            <button class="btn btn-sm btn-light py-0" onclick="toggleTaskForm()">Nueva +</button>
-                        </div>
-                        <div class="card-body">
-                            <div id="taskForm" class="mb-3 p-3 bg-light border rounded" style="display:none;">
-                                <div class="row g-2">
-                                    <div class="col-md-8"><input type="text" id="task-desc" class="form-control" placeholder="Task Description"></div>
-                                    <div class="col-md-4"><input type="text" id="task-owner" class="form-control" placeholder="Assigned To"></div>
-                                    <div class="col-12"><button onclick="addTask()" class="btn btn-sm btn-dark w-100">Añadir Tarea</button></div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card shadow-sm mb-4">
+                                <div class="card-header bg-secondary text-white d-flex justify-content-between">
+                                    <span><i class="fas fa-tasks"></i> Tareas Pendientes</span>
+                                    <button class="btn btn-sm btn-light py-0" onclick="toggleTaskForm()">Nueva +</button>
+                                </div>
+                                <div class="card-body">
+                                    <div id="taskForm" class="mb-3 p-3 bg-light border rounded" style="display:none;">
+                                        <div class="row g-2">
+                                            <div class="col-md-8"><input type="text" id="task-desc" class="form-control" placeholder="Task Description"></div>
+                                            <div class="col-md-4"><input type="text" id="task-owner" class="form-control" placeholder="Assigned To"></div>
+                                            <div class="col-12"><button onclick="addTask()" class="btn btn-sm btn-dark w-100">Añadir Tarea</button></div>
+                                        </div>
+                                    </div>
+                                    <table class="table table-hover small">
+                                        <thead><tr><th>Tarea</th><th>Persona</th><th>Estado</th></tr></thead>
+                                        <tbody id="task-list"></tbody>
+                                    </table>
                                 </div>
                             </div>
-                            <table class="table table-hover small">
-                                <thead><tr><th>Tarea</th><th>Persona</th><th>Estado</th></tr></thead>
-                                <tbody id="task-list"></tbody>
-                            </table>
                         </div>
-                    </div>
 
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-secondary text-white">
-                            <i class="fas fa-handshake"></i> Reuniones del día
-                        </div>
-                        <div class="card-body">
-                             <div class="input-group mb-2">
-                                <input type="time" id="meet-time" class="form-control" style="max-width: 100px;">
-                                <input type="text" id="meet-name" class="form-control" placeholder="Meeting Topic">
-                                <button class="btn btn-secondary" onclick="addMeeting()">Añadir +</button>
+                        <div class="col-md-6">
+                            <div class="card shadow-sm mb-4">
+                                <div class="card-header bg-secondary text-white">
+                                    <i class="fas fa-handshake"></i> Reuniones del día
+                                </div>
+                                <div class="card-body">
+                                    <div class="input-group mb-2">
+                                        <input type="time" id="meet-time" class="form-control" style="max-width: 100px;">
+                                        <input type="text" id="meet-name" class="form-control" placeholder="Meeting Topic">
+                                        <button class="btn btn-secondary" onclick="addMeeting()">Añadir +</button>
+                                    </div>
+                                    <ul id="meeting-list" class="list-group small"></ul>
+                                </div>
                             </div>
-                            <ul id="meeting-list" class="list-group small"></ul>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 1. STATE MANAGEMENT ---
+        // --- STATE MANAGEMENT ---
         let appData = {
             bitacora: [],
             tasks: [],
@@ -174,140 +234,215 @@
             metrics: { calls: 10000000, nds: 0, nda: 0, ans: 0 }
         };
 
-        // --- DOM ELEMENTS FOR IMPROVED FORM ---
-        const elements = {
-            persona: document.getElementById('bit-persona'),
-            horas: document.getElementById('bit-horas'),
-            recuperar: document.getElementById('bit-recuperar_horas'),
-            motivo: document.getElementById('bit-motivo'),
-            baja: document.getElementById('bit-baja'),
-            bajaContainer: document.getElementById('bit-baja-container'),
-            tipo: document.getElementById('bit-tipo')
-        };
+        let currentIncidentType = null;
 
         // --- FIELD CONFIGURATIONS ---
-        const fieldConfigs = {
+        const incidentConfigs = {
             'Retraso': {
-                fields: ['persona', 'horas', 'recuperar', 'motivo'],
-                placeholders: { motivo: 'Tiempo de retraso' }
+                badge: 'bg-warning text-dark',
+                icon: 'fa-clock',
+                fields: [
+                    { id: 'persona', label: 'Email de la persona', type: 'email', required: true, col: 12 },
+                    { id: 'horas', label: 'Tiempo de retraso', type: 'text', placeholder: 'Ej: 30 minutos', required: true, col: 6 },
+                    { id: 'recuperar', label: '¿Cómo recuperará?', type: 'text', required: true, col: 6 },
+                    { id: 'motivo', label: 'Motivo del retraso', type: 'textarea', required: true, col: 12 }
+                ]
             },
             'Falta': {
-                fields: ['persona', 'horas', 'recuperar', 'motivo'],
-                placeholders: { motivo: 'Horas de falta' }
+                badge: 'bg-danger',
+                icon: 'fa-user-times',
+                fields: [
+                    { id: 'persona', label: 'Email de la persona', type: 'email', required: true, col: 12 },
+                    { id: 'horas', label: 'Horas de falta', type: 'text', placeholder: 'Ej: 8 horas', required: true, col: 6 },
+                    { id: 'recuperar', label: '¿Cómo recuperará?', type: 'text', required: true, col: 6 },
+                    { id: 'motivo', label: 'Motivo de la falta', type: 'textarea', required: true, col: 12 }
+                ]
             },
             'Enfermo': {
-                fields: ['persona', 'horas', 'recuperar', 'baja'],
-                placeholders: { motivo: 'Horas solicitadas' }
+                badge: 'bg-info',
+                icon: 'fa-notes-medical',
+                fields: [
+                    { id: 'persona', label: 'Email de la persona', type: 'email', required: true, col: 12 },
+                    { id: 'horas', label: 'Horas solicitadas', type: 'text', placeholder: 'Ej: Todo el día', required: true, col: 6 },
+                    { id: 'recuperar', label: '¿Cómo recuperará?', type: 'text', required: true, col: 6 },
+                    { id: 'baja', label: 'Baja médica', type: 'checkbox', col: 12 }
+                ]
             },
             'LibrePorHoras': {
-                fields: ['persona', 'horas'],
-                placeholders: { motivo: 'Horas solicitadas' }
+                badge: 'bg-success',
+                icon: 'fa-calendar-check',
+                fields: [
+                    { id: 'persona', label: 'Email de la persona', type: 'email', required: true, col: 8 },
+                    { id: 'horas', label: 'Horas solicitadas', type: 'text', placeholder: 'Ej: 2 horas', required: true, col: 4 }
+                ]
             },
             'Formacion': {
-                fields: ['persona', 'motivo'],
-                placeholders: { motivo: '¿Qué formación?' }
+                badge: 'bg-primary',
+                icon: 'fa-graduation-cap',
+                fields: [
+                    { id: 'persona', label: 'Email de la persona', type: 'email', required: true, col: 12 },
+                    { id: 'motivo', label: '¿Qué tipo de formación?', type: 'textarea', placeholder: 'Describe el curso o formación', required: true, col: 12 }
+                ]
             },
             'Grave': {
-                fields: ['motivo'],
-                placeholders: { motivo: 'Describe el incidente grave' }
+                badge: 'bg-dark',
+                icon: 'fa-exclamation-triangle',
+                fields: [
+                    { id: 'motivo', label: 'Describe el incidente grave', type: 'textarea', placeholder: 'Detalles completos del incidente...', required: true, col: 12, rows: 4 }
+                ]
             }
         };
 
-        // --- INITIALIZE ---
-        document.addEventListener('DOMContentLoaded', () => {
-            updateFormFields();
-        });
+        // --- OPEN INCIDENT FORM ---
+        function openIncidentForm(tipo) {
+            currentIncidentType = tipo;
+            const config = incidentConfigs[tipo];
+            const form = document.getElementById('detailForm');
+            const badge = document.getElementById('formBadge');
+            const fieldsContainer = document.getElementById('dynamicFields');
 
-        // --- FORM FIELD MANAGEMENT ---
-        elements.tipo.addEventListener('change', updateFormFields);
+            // Update badge
+            badge.className = `badge badge-tipo ${config.badge}`;
+            badge.innerHTML = `<i class="fas ${config.icon}"></i> ${tipo}`;
 
-        function updateFormFields() {
-            const tipo = elements.tipo.value;
-            const config = fieldConfigs[tipo];
-
-            // Hide all fields first
-            ['persona', 'horas', 'recuperar', 'motivo'].forEach(field => {
-                elements[field].classList.add('hidden');
-            });
-            elements.bajaContainer.classList.add('hidden');
-            
-            // Show required fields
-            config.fields.forEach(field => {
-                if (field === 'baja') {
-                    elements.bajaContainer.classList.remove('hidden');
+            // Generate fields
+            fieldsContainer.innerHTML = config.fields.map(field => {
+                if (field.type === 'checkbox') {
+                    return `
+                        <div class="col-${field.col}">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="field_${field.id}">
+                                <label class="form-check-label" for="field_${field.id}">
+                                    ${field.label}
+                                </label>
+                            </div>
+                        </div>
+                    `;
+                } else if (field.type === 'textarea') {
+                    return `
+                        <div class="col-${field.col}">
+                            <label class="form-label">${field.label} ${field.required ? '<span class="text-danger">*</span>' : ''}</label>
+                            <textarea class="form-control" id="field_${field.id}" rows="${field.rows || 2}" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''}></textarea>
+                        </div>
+                    `;
                 } else {
-                    elements[field].classList.remove('hidden');
+                    return `
+                        <div class="col-${field.col}">
+                            <label class="form-label">${field.label} ${field.required ? '<span class="text-danger">*</span>' : ''}</label>
+                            <input type="${field.type}" class="form-control" id="field_${field.id}" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''}>
+                        </div>
+                    `;
+                }
+            }).join('');
+
+            // Show form
+            form.classList.add('active');
+            
+            // Scroll to form
+            form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function closeIncidentForm() {
+            document.getElementById('detailForm').classList.remove('active');
+            currentIncidentType = null;
+        }
+
+        // --- SUBMIT INCIDENT ---
+        function submitIncident() {
+            if (!currentIncidentType) return;
+
+            const config = incidentConfigs[currentIncidentType];
+            const entry = {
+                tipo: currentIncidentType,
+                timestamp: new Date().toLocaleString('es-ES')
+            };
+
+            // Collect field values
+            let isValid = true;
+            config.fields.forEach(field => {
+                const input = document.getElementById(`field_${field.id}`);
+                
+                if (field.type === 'checkbox') {
+                    entry[field.id] = input.checked ? 'Sí' : 'No';
+                } else {
+                    entry[field.id] = input.value;
+                    
+                    // Validate required fields
+                    if (field.required && !input.value.trim()) {
+                        input.classList.add('is-invalid');
+                        isValid = false;
+                    } else {
+                        input.classList.remove('is-invalid');
+                    }
                 }
             });
+
+            if (!isValid) {
+                alert('Por favor, completa todos los campos obligatorios');
+                return;
+            }
+
+            // Add to data
+            appData.bitacora.push(entry);
+            renderBitacora();
+            closeIncidentForm();
             
-            // Update placeholders
-            Object.keys(config.placeholders || {}).forEach(field => {
-                elements[field].placeholder = config.placeholders[field];
+            // Clear form
+            config.fields.forEach(field => {
+                const input = document.getElementById(`field_${field.id}`);
+                if (field.type === 'checkbox') {
+                    input.checked = false;
+                } else {
+                    input.value = '';
+                }
+                input.classList.remove('is-invalid');
             });
         }
 
-        // --- CM_DATOS MANAGEMENT ---
-        function changePanel(text){
-            document.getElementById("panelImagenes1").style.display = 'none';
-            document.getElementById("panelImagenes2").style.display = 'none';
-            document.getElementById("panelImagenes3").style.display = 'none';
-            document.getElementById(text).style.display = 'flex';
-            document.getElementById(text).style.gap = '20px';
-            console.log(text)
-        }
-
-        $(".images img").click(function(){
-            $("#full-image").attr("src", $(this).attr("src"));
-            $('#image-viewer').show();
-        });
-
-        $("#image-viewer .close").click(function(){
-            $('#image-viewer').hide();
-        });
-
-        $(".imagenes_paneles").click(function(){
-            var bgImage = $(this).css('background-image');
+        // --- RENDER BITACORA ---
+        function renderBitacora() {
+            const list = document.getElementById('bitacora-list');
+            const countBadge = document.getElementById('incidentCount');
             
-            console.log("CLICK ON IMAGE, bg-image: " + bgImage);
-            
-            if (bgImage && bgImage !== 'none') {
-                var imageUrl = bgImage.replace(/^url\(["']?/, '').replace(/["']?\)$/, '');
+            countBadge.textContent = appData.bitacora.length;
+
+            if (appData.bitacora.length === 0) {
+                list.innerHTML = `
+                    <li class="list-group-item text-muted text-center py-4">
+                        <i class="fas fa-clipboard-list fa-2x mb-2 d-block"></i>
+                        No hay incidencias registradas
+                    </li>
+                `;
+                return;
+            }
+
+            list.innerHTML = appData.bitacora.map((item, index) => {
+                const config = incidentConfigs[item.tipo];
                 
-                $("#full-image").attr("src", imageUrl);
-                $('#image-viewer').show();
-                console.log("Image URL: " + imageUrl);
-                console.log("Modal display: " + $('#image-viewer').css('display'));
-            } else {
-                console.log("No background image found!");
-            }
-        });
+                let details = [];
+                if (item.persona) details.push(`<strong>Persona:</strong> ${item.persona}`);
+                if (item.horas) details.push(`<strong>Horas:</strong> ${item.horas}`);
+                if (item.recuperar) details.push(`<strong>Recuperar:</strong> ${item.recuperar}`);
+                if (item.motivo) details.push(`<strong>Motivo:</strong> ${item.motivo}`);
+                if (item.baja) details.push(`<strong>Baja:</strong> ${item.baja}`);
 
-        function upload(n) {
-            const fileUploadInput = document.querySelectorAll('.file-uploader');
-
-            console.log("IMAGE "+fileUploadInput)
-            const image = fileUploadInput[n].files[0];
-            console.log("IMAGE "+image)
-
-            if (!image.type.includes('image')) {
-                return alert('Only images are allowed!');
-            }
-
-            if (image.size > 10_000_000) {
-                return alert('Maximum upload size is 10MB!');
-            }
-            const fileReader = new FileReader();
-            fileReader.readAsDataURL(image);
-
-            fileReader.onload = (fileReaderEvent) => {
-                const profilePicture = document.querySelectorAll('.imagenes_paneles');
-                profilePicture[n].style.backgroundImage = `url(${fileReaderEvent.target.result})`;
-                fileUploadInput[n].style.display="none";
-                profilePicture[n].setAttribute('data-image-url', imageUrl)
-            }
+                return `
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge ${config.badge}">
+                                <i class="fas ${config.icon}"></i> ${item.tipo}
+                            </span>
+                            <small class="text-muted">${item.timestamp}</small>
+                        </div>
+                        <div class="bitacora-summary small">
+                            ${details.join(' • ')}
+                        </div>
+                    </li>
+                `;
+            }).reverse().join('');
         }
 
-        // --- 2. AUTHENTICATION ---
+        // --- AUTHENTICATION ---
         function login() {
             const user = document.getElementById('username').value;
             if(user) {
@@ -321,127 +456,7 @@
             location.reload();
         }
 
-        // --- 4. BITACORA LOGIC (IMPROVED) ---
-        function addBitacora() {
-            const tipo = elements.tipo.value;
-            const config = fieldConfigs[tipo];
-            
-            // Validate required fields
-            let isValid = true;
-            config.fields.forEach(field => {
-                if (field !== 'baja' && !elements[field].value.trim()) {
-                    elements[field].classList.add('is-invalid');
-                    isValid = false;
-                } else if (field !== 'baja') {
-                    elements[field].classList.remove('is-invalid');
-                }
-            });
-            
-            if (!isValid) return;
-
-            const entry = {
-                tipo: tipo,
-                persona: elements.persona.value,
-                horas: elements.horas.value,
-                recuperar: elements.recuperar.value,
-                motivo: elements.motivo.value,
-                baja: elements.baja.checked ? 'Sí' : 'No',
-                timestamp: new Date().toLocaleString('es-ES')
-            };
-
-            appData.bitacora.push(entry);
-            renderBitacora();
-            clearInputs();
-        }
-
-        function renderBitacora() {
-            const list = document.getElementById('bitacora-list');
-            
-            if (appData.bitacora.length === 0) {
-                list.innerHTML = '<li class="list-group-item text-muted text-center">No hay registros aún.</li>';
-                return;
-            }
-            
-            list.innerHTML = appData.bitacora.map(item => {
-                const badgeColor = {
-                    'Retraso': 'warning',
-                    'Falta': 'danger',
-                    'Enfermo': 'info',
-                    'LibrePorHoras': 'success',
-                    'Formacion': 'primary',
-                    'Grave': 'dark'
-                }[item.tipo];
-
-                let details = '';
-                
-                switch(item.tipo) {
-                    case 'Retraso':
-                        details = `
-                            <div><strong>Persona:</strong> ${item.persona}</div>
-                            <div><strong>Tiempo:</strong> ${item.horas} | <strong>Recuperar:</strong> ${item.recuperar}</div>
-                            <div><strong>Motivo:</strong> ${item.motivo}</div>
-                        `;
-                        break;
-                    case 'Falta':
-                        details = `
-                            <div><strong>Persona:</strong> ${item.persona}</div>
-                            <div><strong>Horas:</strong> ${item.horas} | <strong>Recuperar:</strong> ${item.recuperar}</div>
-                            <div><strong>Motivo:</strong> ${item.motivo}</div>
-                        `;
-                        break;
-                    case 'Enfermo':
-                        details = `
-                            <div><strong>Persona:</strong> ${item.persona}</div>
-                            <div><strong>Horas:</strong> ${item.horas} | <strong>Recuperar:</strong> ${item.recuperar}</div>
-                            <div><strong>Baja médica:</strong> ${item.baja}</div>
-                        `;
-                        break;
-                    case 'LibrePorHoras':
-                        details = `
-                            <div><strong>Persona:</strong> ${item.persona}</div>
-                            <div><strong>Horas solicitadas:</strong> ${item.horas}</div>
-                        `;
-                        break;
-                    case 'Formacion':
-                        details = `
-                            <div><strong>Persona:</strong> ${item.persona}</div>
-                            <div><strong>Formación:</strong> ${item.motivo}</div>
-                        `;
-                        break;
-                    case 'Grave':
-                        details = `
-                            <div><strong>Incidente:</strong> ${item.motivo}</div>
-                        `;
-                        break;
-                }
-
-                return `
-                    <li class="list-group-item bitacora-entry">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <span class="badge bg-${badgeColor} badge-tipo mb-2">${item.tipo}</span>
-                                ${details}
-                            </div>
-                            <small class="text-muted ms-3">${item.timestamp}</small>
-                        </div>
-                    </li>
-                `;
-            }).reverse().join('');
-        }
-
-        function clearInputs() {
-            elements.persona.value = '';
-            elements.horas.value = '';
-            elements.recuperar.value = '';
-            elements.motivo.value = '';
-            elements.baja.checked = false;
-            
-            [elements.persona, elements.horas, elements.recuperar, elements.motivo].forEach(el => {
-                el.classList.remove('is-invalid');
-            });
-        }
-
-        // --- 5. TASKS LOGIC ---
+        // --- TASKS LOGIC ---
         function toggleTaskForm() {
             const form = document.getElementById('taskForm');
             form.style.display = form.style.display === 'none' ? 'block' : 'none';
@@ -471,7 +486,7 @@
             });
         }
 
-        // --- 6. MEETINGS LOGIC ---
+        // --- MEETINGS LOGIC ---
         function addMeeting() {
             const time = document.getElementById('meet-time').value;
             const name = document.getElementById('meet-name').value;
@@ -484,13 +499,16 @@
             }
         }
 
-        // --- 7. EXPORT TO DOCX (Client Side) ---
+        // --- EXPORT TO DOCX ---
         function exportReport() {
             const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
 
-            const bitacoraRows = appData.bitacora.map(b => 
-                new Paragraph({ text: `• [${b.timestamp}] ${b.tipo} - ${b.persona || 'N/A'}`, bullet: { level: 0 } })
-            );
+            const bitacoraRows = appData.bitacora.map(b => {
+                let details = `${b.tipo}`;
+                if (b.persona) details += ` - ${b.persona}`;
+                if (b.horas) details += ` (${b.horas})`;
+                return new Paragraph({ text: `• [${b.timestamp}] ${details}`, bullet: { level: 0 } });
+            });
 
             const taskRows = appData.tasks.map(t => 
                 new Paragraph({ text: `• ${t.desc} (${t.owner}) - ${t.status}`, bullet: { level: 0 } })
@@ -504,15 +522,11 @@
                         new Paragraph({ text: `Date: ${new Date().toLocaleDateString()}`, heading: HeadingLevel.HEADING_2 }),
                         
                         new Paragraph({ text: " ", spacing: { before: 200 } }),
-                        new Paragraph({ text: "1. Service Metrics (End of Day)", heading: HeadingLevel.HEADING_1 }),
-                        new Paragraph({ text: `Final Calls: ${appData.metrics.calls} | NDS: ${appData.metrics.nds}% | NDA: ${appData.metrics.nda}%` }),
-
-                        new Paragraph({ text: " ", spacing: { before: 200 } }),
-                        new Paragraph({ text: "2. Bitacora (HR & Incidents)", heading: HeadingLevel.HEADING_1 }),
+                        new Paragraph({ text: "1. Bitacora (HR & Incidents)", heading: HeadingLevel.HEADING_1 }),
                         ...bitacoraRows,
 
                         new Paragraph({ text: " ", spacing: { before: 200 } }),
-                        new Paragraph({ text: "3. Pending Tasks", heading: HeadingLevel.HEADING_1 }),
+                        new Paragraph({ text: "2. Pending Tasks", heading: HeadingLevel.HEADING_1 }),
                         ...taskRows,
                     ],
                 }],

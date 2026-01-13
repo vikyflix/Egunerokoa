@@ -3,532 +3,266 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Egunerokoa</title>
+    <title>Egunerokoa - Full Info System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link rel="stylesheet"  href="css.css">
     
     <style>
-        .scrollable-list {
-            max-height: 400px;
-            overflow-y: auto;
+        body { background-color: #f4f7f6; color: #2d3436; font-size: 0.95rem; }
+        .card { border-radius: 12px; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+
+        .quick-add-btn { 
+            width: 100%; padding: 15px; text-align: left; background: white; 
+            border: 1px solid #000000; transition: all 0.2s; font-weight: 600; margin-bottom: 10px;
         }
-        .form-field {
-            transition: all 0.3s ease;
-        }
-        .form-field.hidden {
-            display: none !important;
-        }
-        .bitacora-entry {
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-        }
-        .badge-tipo {
-            min-width: 120px;
-            text-align: center;
-        }
+        /*
+        .quick-add-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        .btn-retraso { border-left-color: #f6ad55; color: #dd6b20; }
+        .btn-falta { border-left-color: #fc8181; color: #e53e3e; }
+        .btn-enfermo { border-left-color: #63b3ed; color: #3182ce; }
+        .btn-libre { border-left-color: #68d391; color: #38a169; }
+        .btn-formacion { border-left-color: #b794f4; color: #805ad5; }
+        .btn-grave { border-left-color: #4a5568; color: #2d3748; }
+        */
+        .form-container { display: none; background: #fff; border: 2px solid #4a90e2; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .form-container.active { display: block; animation: fadeIn 0.3s; }
+        
+        .remove-btn { color: #feb2b2; cursor: pointer; transition: 0.2s; }
+        .remove-btn:hover { color: #f56565; }
+
+        #loginOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .data-label { font-weight: bold; color: #718096; font-size: 0.75rem; text-transform: uppercase; margin-right: 5px; }
+        .entry-detail { background: #f8fafc; padding: 2px 8px; border-radius: 4px; margin-right: 5px; display: inline-block; margin-bottom: 2px; }
     </style>
 </head>
 <body>
-    
-    <div id="loginOverlay" onload="login()">
-        <div class="card p-5" style="width: 400px;">
-            <h3 class="text-center mb-4"><i class="fas fa-user-shield"></i>Login Responsable</h3>
-            <div class="mb-3">
-                <label>Usuario</label>
-                <input type="text" id="username" class="form-control" placeholder="usuario">
-            </div>
-            <div class="mb-3">
-                <label>Password</label>
-                <input type="password" id="password" class="form-control" placeholder="contraseña">
-            </div>
-            <button onclick="login()" class="btn btn-primary w-100">Acceder</button>
-            <small class="text-muted text-center d-block mt-2">(Puedes usar cualquier texto, solo es una prueba)</small>
+
+    <div id="loginOverlay">
+        <div class="card p-5" style="width: 380px;">
+            <h4 class="text-center mb-4">Control de Acceso</h4>
+            <input type="password" id="pass" class="form-control mb-3" placeholder="Contraseña">
+            <button onclick="login()" class="btn btn-primary w-100">Entrar</button>
         </div>
     </div>
 
-    <div id="appContent" style="display:none;">
-        
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4">
-            <a class="navbar-brand" href="#"><i class="fas fa-network-wired"></i> Egunerokoa</a>
-            <div class="ms-auto">
-                <span class="text-light me-3" id="currentUser"></span>
-                <button onclick="exportReport()" class="btn btn-success btn-sm"><i class="fas fa-file-word"></i> Exportar DOCX</button>
-                <button onclick="logout()" class="btn btn-outline-light btn-sm ms-2">Logout</button>
-            </div>
+    <div id="mainApp" style="display:none">
+        <nav class="navbar navbar-dark bg-dark px-4 mb-4">
+            <span class="navbar-brand mb-0 h1"><i class="fas fa-database me-2"></i> Egunerokoa</span>
+            <button onclick="exportJSON()" class="btn btn-outline-info btn-sm">Descargar Backup JSON </button>
         </nav>
 
-        <div class="container-fluid mt-4">
+        <div class="container-fluid">
             <div class="row">
-                <!-- IMPROVED BITACORA SECTION -->
-                <div class="col-lg-12">
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-primary text-white">
-                            <i class="fas fa-book"></i> Cuaderno de Bitácora 
+                <div class="col-md-8">
+                    <div class="card p-4 mb-4">
+                        <h5 class="mb-4">Registrar Incidencia</h5>
+                        <div class="row">
+                            <div class="col-md-4"><button class="quick-add-btn btn-retraso" onclick="setupForm('Retraso')"> Retraso</button></div>
+                            <div class="col-md-4"><button class="quick-add-btn btn-falta" onclick="setupForm('Falta')"> Falta</button></div>
+                            <div class="col-md-4"><button class="quick-add-btn btn-enfermo" onclick="setupForm('Enfermo')"> Enfermo</button></div>
+                            <div class="col-md-4"><button class="quick-add-btn btn-libre" onclick="setupForm('Libre Por Horas')">Libre por horas</button></div>
+                            <div class="col-md-4"><button class="quick-add-btn btn-formacion" onclick="setupForm('Formacion')"> Formación</button></div>
+                            <div class="col-md-4"><button class="quick-add-btn btn-grave" onclick="setupForm('Grave')"> Grave</button></div>
                         </div>
-                        <div class="card-body">
-                            <!-- Improved Form -->
-                            <div class="row g-2 mb-3">
-                                <div class="col-md-3">
-                                    <select id="bit-tipo" class="form-select">
-                                        <option value="Retraso">Retraso</option>
-                                        <option value="Falta">Falta</option>
-                                        <option value="Enfermo">Enfermo</option>
-                                        <option value="LibrePorHoras">Libre por horas</option>
-                                        <option value="Formacion">Formación</option>
-                                        <option value="Grave">Grave</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-9">
-                                    <input type="email" id="bit-persona" class="form-control form-field" placeholder="Email de la persona">
-                                </div>
-                            </div>
 
-                            <div class="row g-2 mb-3">
-                                <div class="col-md-4">
-                                    <input type="text" id="bit-horas" class="form-control form-field" placeholder="Horas solicitadas/recuperar">
-                                </div>
-                                <div class="col-md-4">
-                                    <input type="text" id="bit-recuperar_horas" class="form-control form-field" placeholder="¿Cómo va a recuperar?">
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check form-field" id="bit-baja-container">
-                                        <input class="form-check-input" type="checkbox" value="baja" id="bit-baja">
-                                        <label class="form-check-label" for="bit-baja">
-                                            Baja médica
-                                        </label>
-                                    </div>
-                                </div>
+                        <div id="dynamicForm" class="form-container shadow">
+                            <h6 id="formTitle" class="fw-bold mb-3"></h6>
+                            <div id="formFields" class="row g-3"></div>
+                            <div class="mt-4">
+                                <button class="btn btn-primary px-4" onclick="saveEntry()">Guardar en Bitácora</button>
+                                <button class="btn btn-light" onclick="$('#dynamicForm').removeClass('active')">Cancelar</button>
                             </div>
+                        </div>
+                    </div>
 
-                            <div class="row g-2 mb-3">
-                                <div class="col-md-10">
-                                    <textarea id="bit-motivo" class="form-control form-field" rows="2" placeholder="Escribe qué ha pasado"></textarea>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card p-3 mb-4">
+                                <h6 class="fw-bold border-bottom pb-2">Tareas del Día</h6>
+                                <div class="input-group input-group-sm mb-3">
+                                    <input type="text" id="t-desc" class="form-control" placeholder="Nueva tarea...">
+                                    <button class="btn btn-dark" onclick="quickEntry('tasks', {desc: $('#t-desc').val()})">Añadir</button>
                                 </div>
-                                <div class="col-md-2 d-flex align-items-end">
-                                    <button class="btn btn-primary w-100" onclick="addBitacora()">
-                                        <i class="fas fa-plus"></i> Registrar
-                                    </button>
-                                </div>
+                                <div id="list-tasks"></div>
                             </div>
-
-                            <!-- List -->
-                            <div class="scrollable-list border rounded p-3 bg-white">
-                                <ul id="bitacora-list" class="list-group list-group-flush">
-                                    <li class="list-group-item text-muted text-center">No hay registros aún.</li>
-                                </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card p-3 mb-4">
+                                <h6 class="fw-bold border-bottom pb-2">Reuniones</h6>
+                                <div class="input-group input-group-sm mb-3">
+                                    <input type="time" id="m-time" class="form-control">
+                                    <input type="text" id="m-name" class="form-control" placeholder="Asunto...">
+                                    <button class="btn btn-dark" onclick="quickEntry('meetings', {time: $('#m-time').val(), name: $('#m-name').val()})">+</button>
+                                </div>
+                                <div id="list-meetings"></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-lg-12">
-                    
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-secondary text-white d-flex justify-content-between">
-                            <span><i class="fas fa-tasks"></i> Tareas Pendientes</span>
-                            <button class="btn btn-sm btn-light py-0" onclick="toggleTaskForm()">Nueva +</button>
+                <div class="col-md-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white fw-bold d-flex justify-content-between">
+                            <span>Actividad de Hoy</span>
+                            <span class="badge bg-primary" id="todayCount">0</span>
                         </div>
-                        <div class="card-body">
-                            <div id="taskForm" class="mb-3 p-3 bg-light border rounded" style="display:none;">
-                                <div class="row g-2">
-                                    <div class="col-md-8"><input type="text" id="task-desc" class="form-control" placeholder="Task Description"></div>
-                                    <div class="col-md-4"><input type="text" id="task-owner" class="form-control" placeholder="Assigned To"></div>
-                                    <div class="col-12"><button onclick="addTask()" class="btn btn-sm btn-dark w-100">Añadir Tarea</button></div>
-                                </div>
-                            </div>
-                            <table class="table table-hover small">
-                                <thead><tr><th>Tarea</th><th>Persona</th><th>Estado</th></tr></thead>
-                                <tbody id="task-list"></tbody>
-                            </table>
+                        <div class="card-body p-0">
+                            <div id="list-bitacora" class="list-group list-group-flush"></div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-secondary text-white">
-                            <i class="fas fa-handshake"></i> Reuniones del día
+            <div class="row mt-5">
+                <div class="col-12 mb-5">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-history me-2"></i> Auditoría de Días Previos</span>
+                            <input type="date" id="histDate" class="form-control form-control-sm w-auto">
                         </div>
-                        <div class="card-body">
-                             <div class="input-group mb-2">
-                                <input type="time" id="meet-time" class="form-control" style="max-width: 100px;">
-                                <input type="text" id="meet-name" class="form-control" placeholder="Meeting Topic">
-                                <button class="btn btn-secondary" onclick="addMeeting()">Añadir +</button>
-                            </div>
-                            <ul id="meeting-list" class="list-group small"></ul>
+                        <div class="card-body bg-light" id="histContent">
+                            <p class="text-center text-muted my-5">Seleccione una fecha para ver el reporte completo.</p>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 1. STATE MANAGEMENT ---
-        let appData = {
-            bitacora: [],
-            tasks: [],
-            meetings: [],
-            metrics: { calls: 10000000, nds: 0, nda: 0, ans: 0 }
+        let data = JSON.parse(localStorage.getItem('egunerokoa_v3')) || { bitacora: [], tasks: [], meetings: [] };
+        const sync = () => { localStorage.setItem('egunerokoa_v3', JSON.stringify(data)); render(); };
+
+        const config = {
+            'Retraso': { color: 'text-warning', fields: [{n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}, {n:'r', l:'Recuperación', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
+            'Falta': { color: 'text-danger', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
+            'Enfermo': { color: 'text-info', fields: [{n:'p', l:'Persona', t:'text'}, {n:'baja', l:'¿Tiene Baja Médica?', t:'check'}] },
+            'Libre Por Horas': { color: 'text-success', fields: [{n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}] },
+            'Formacion': { color: 'text-primary', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Curso', t:'text'}] },
+            'Grave': { color: 'text-dark', fields: [{n:'m', l:'Descripción', t:'text'}] }
         };
 
-        // --- DOM ELEMENTS FOR IMPROVED FORM ---
-        const elements = {
-            persona: document.getElementById('bit-persona'),
-            horas: document.getElementById('bit-horas'),
-            recuperar: document.getElementById('bit-recuperar_horas'),
-            motivo: document.getElementById('bit-motivo'),
-            baja: document.getElementById('bit-baja'),
-            bajaContainer: document.getElementById('bit-baja-container'),
-            tipo: document.getElementById('bit-tipo')
-        };
+        let activeCat = null;
+        function login() { $('#loginOverlay').hide(); $('#mainApp').show(); render(); }
 
-        // --- FIELD CONFIGURATIONS ---
-        const fieldConfigs = {
-            'Retraso': {
-                fields: ['persona', 'horas', 'recuperar', 'motivo'],
-                placeholders: { motivo: 'Tiempo de retraso' }
-            },
-            'Falta': {
-                fields: ['persona', 'horas', 'recuperar', 'motivo'],
-                placeholders: { motivo: 'Horas de falta' }
-            },
-            'Enfermo': {
-                fields: ['persona', 'horas', 'recuperar', 'baja'],
-                placeholders: { motivo: 'Horas solicitadas' }
-            },
-            'LibrePorHoras': {
-                fields: ['persona', 'horas'],
-                placeholders: { motivo: 'Horas solicitadas' }
-            },
-            'Formacion': {
-                fields: ['persona', 'motivo'],
-                placeholders: { motivo: '¿Qué formación?' }
-            },
-            'Grave': {
-                fields: ['motivo'],
-                placeholders: { motivo: 'Describe el incidente grave' }
-            }
-        };
-
-        // --- INITIALIZE ---
-        document.addEventListener('DOMContentLoaded', () => {
-            updateFormFields();
-        });
-
-        // --- FORM FIELD MANAGEMENT ---
-        elements.tipo.addEventListener('change', updateFormFields);
-
-        function updateFormFields() {
-            const tipo = elements.tipo.value;
-            const config = fieldConfigs[tipo];
-
-            // Hide all fields first
-            ['persona', 'horas', 'recuperar', 'motivo'].forEach(field => {
-                elements[field].classList.add('hidden');
-            });
-            elements.bajaContainer.classList.add('hidden');
-            
-            // Show required fields
-            config.fields.forEach(field => {
-                if (field === 'baja') {
-                    elements.bajaContainer.classList.remove('hidden');
-                } else {
-                    elements[field].classList.remove('hidden');
-                }
-            });
-            
-            // Update placeholders
-            Object.keys(config.placeholders || {}).forEach(field => {
-                elements[field].placeholder = config.placeholders[field];
-            });
-        }
-
-        // --- CM_DATOS MANAGEMENT ---
-        function changePanel(text){
-            document.getElementById("panelImagenes1").style.display = 'none';
-            document.getElementById("panelImagenes2").style.display = 'none';
-            document.getElementById("panelImagenes3").style.display = 'none';
-            document.getElementById(text).style.display = 'flex';
-            document.getElementById(text).style.gap = '20px';
-            console.log(text)
-        }
-
-        $(".images img").click(function(){
-            $("#full-image").attr("src", $(this).attr("src"));
-            $('#image-viewer').show();
-        });
-
-        $("#image-viewer .close").click(function(){
-            $('#image-viewer').hide();
-        });
-
-        $(".imagenes_paneles").click(function(){
-            var bgImage = $(this).css('background-image');
-            
-            console.log("CLICK ON IMAGE, bg-image: " + bgImage);
-            
-            if (bgImage && bgImage !== 'none') {
-                var imageUrl = bgImage.replace(/^url\(["']?/, '').replace(/["']?\)$/, '');
-                
-                $("#full-image").attr("src", imageUrl);
-                $('#image-viewer').show();
-                console.log("Image URL: " + imageUrl);
-                console.log("Modal display: " + $('#image-viewer').css('display'));
-            } else {
-                console.log("No background image found!");
-            }
-        });
-
-        function upload(n) {
-            const fileUploadInput = document.querySelectorAll('.file-uploader');
-
-            console.log("IMAGE "+fileUploadInput)
-            const image = fileUploadInput[n].files[0];
-            console.log("IMAGE "+image)
-
-            if (!image.type.includes('image')) {
-                return alert('Only images are allowed!');
-            }
-
-            if (image.size > 10_000_000) {
-                return alert('Maximum upload size is 10MB!');
-            }
-            const fileReader = new FileReader();
-            fileReader.readAsDataURL(image);
-
-            fileReader.onload = (fileReaderEvent) => {
-                const profilePicture = document.querySelectorAll('.imagenes_paneles');
-                profilePicture[n].style.backgroundImage = `url(${fileReaderEvent.target.result})`;
-                fileUploadInput[n].style.display="none";
-                profilePicture[n].setAttribute('data-image-url', imageUrl)
-            }
-        }
-
-        // --- 2. AUTHENTICATION ---
-        function login() {
-            const user = document.getElementById('username').value;
-            if(user) {
-            }
-            document.getElementById('loginOverlay').style.display = 'none';
-            document.getElementById('appContent').style.display = 'block';
-            document.getElementById('currentUser').innerText = `Welcome, ${user}`;
-        }
-
-        function logout() {
-            location.reload();
-        }
-
-        // --- 4. BITACORA LOGIC (IMPROVED) ---
-        function addBitacora() {
-            const tipo = elements.tipo.value;
-            const config = fieldConfigs[tipo];
-            
-            // Validate required fields
-            let isValid = true;
-            config.fields.forEach(field => {
-                if (field !== 'baja' && !elements[field].value.trim()) {
-                    elements[field].classList.add('is-invalid');
-                    isValid = false;
-                } else if (field !== 'baja') {
-                    elements[field].classList.remove('is-invalid');
-                }
-            });
-            
-            if (!isValid) return;
-
-            const entry = {
-                tipo: tipo,
-                persona: elements.persona.value,
-                horas: elements.horas.value,
-                recuperar: elements.recuperar.value,
-                motivo: elements.motivo.value,
-                baja: elements.baja.checked ? 'Sí' : 'No',
-                timestamp: new Date().toLocaleString('es-ES')
-            };
-
-            appData.bitacora.push(entry);
-            renderBitacora();
-            clearInputs();
-        }
-
-        function renderBitacora() {
-            const list = document.getElementById('bitacora-list');
-            
-            if (appData.bitacora.length === 0) {
-                list.innerHTML = '<li class="list-group-item text-muted text-center">No hay registros aún.</li>';
-                return;
-            }
-            
-            list.innerHTML = appData.bitacora.map(item => {
-                const badgeColor = {
-                    'Retraso': 'warning',
-                    'Falta': 'danger',
-                    'Enfermo': 'info',
-                    'LibrePorHoras': 'success',
-                    'Formacion': 'primary',
-                    'Grave': 'dark'
-                }[item.tipo];
-
-                let details = '';
-                
-                switch(item.tipo) {
-                    case 'Retraso':
-                        details = `
-                            <div><strong>Persona:</strong> ${item.persona}</div>
-                            <div><strong>Tiempo:</strong> ${item.horas} | <strong>Recuperar:</strong> ${item.recuperar}</div>
-                            <div><strong>Motivo:</strong> ${item.motivo}</div>
-                        `;
-                        break;
-                    case 'Falta':
-                        details = `
-                            <div><strong>Persona:</strong> ${item.persona}</div>
-                            <div><strong>Horas:</strong> ${item.horas} | <strong>Recuperar:</strong> ${item.recuperar}</div>
-                            <div><strong>Motivo:</strong> ${item.motivo}</div>
-                        `;
-                        break;
-                    case 'Enfermo':
-                        details = `
-                            <div><strong>Persona:</strong> ${item.persona}</div>
-                            <div><strong>Horas:</strong> ${item.horas} | <strong>Recuperar:</strong> ${item.recuperar}</div>
-                            <div><strong>Baja médica:</strong> ${item.baja}</div>
-                        `;
-                        break;
-                    case 'LibrePorHoras':
-                        details = `
-                            <div><strong>Persona:</strong> ${item.persona}</div>
-                            <div><strong>Horas solicitadas:</strong> ${item.horas}</div>
-                        `;
-                        break;
-                    case 'Formacion':
-                        details = `
-                            <div><strong>Persona:</strong> ${item.persona}</div>
-                            <div><strong>Formación:</strong> ${item.motivo}</div>
-                        `;
-                        break;
-                    case 'Grave':
-                        details = `
-                            <div><strong>Incidente:</strong> ${item.motivo}</div>
-                        `;
-                        break;
-                }
-
-                return `
-                    <li class="list-group-item bitacora-entry">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <span class="badge bg-${badgeColor} badge-tipo mb-2">${item.tipo}</span>
-                                ${details}
-                            </div>
-                            <small class="text-muted ms-3">${item.timestamp}</small>
+        function setupForm(cat) {
+            activeCat = cat;
+            $('#formTitle').html(`<span class="${config[cat].color}">${cat}</span>`);
+            $('#formFields').html(config[cat].fields.map(f => `
+                <div class="${f.t === 'check' ? 'col-12' : 'col-md-6'}">
+                    ${f.t === 'check' ? `
+                        <div class="form-check p-3 border rounded bg-light mt-2">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="in_${f.n}">
+                            <label class="form-check-label fw-bold" for="in_${f.n}">${f.l}</label>
                         </div>
-                    </li>
-                `;
-            }).reverse().join('');
+                    ` : `
+                        <label class="small fw-bold text-muted">${f.l}</label>
+                        <input id="in_${f.n}" class="form-control">
+                    `}
+                </div>
+            `).join(''));
+            $('#dynamicForm').addClass('active');
         }
 
-        function clearInputs() {
-            elements.persona.value = '';
-            elements.horas.value = '';
-            elements.recuperar.value = '';
-            elements.motivo.value = '';
-            elements.baja.checked = false;
-            
-            [elements.persona, elements.horas, elements.recuperar, elements.motivo].forEach(el => {
-                el.classList.remove('is-invalid');
+        function saveEntry() {
+            let entry = { id: Date.now(), type: activeCat, date: today(), time: now() };
+            config[activeCat].fields.forEach(f => {
+                const el = $(`#in_${f.n}`);
+                entry[f.n] = f.t === 'check' ? el.is(':checked') : el.val();
             });
+            data.bitacora.push(entry);
+            $('#dynamicForm').removeClass('active');
+            sync();
         }
 
-        // --- 5. TASKS LOGIC ---
-        function toggleTaskForm() {
-            const form = document.getElementById('taskForm');
-            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        function quickEntry(cat, obj) {
+            if(!Object.values(obj)[0]) return;
+            obj.id = Date.now(); obj.date = today();
+            data[cat].push(obj); sync();
+            $('#t-desc, #m-name').val('');
         }
 
-        function addTask() {
-            const desc = document.getElementById('task-desc').value;
-            const owner = document.getElementById('task-owner').value;
-            
-            if(desc) {
-                appData.tasks.push({ desc, owner, status: 'Pending' });
-                renderTasks();
-                document.getElementById('task-desc').value = '';
-                toggleTaskForm();
+        function remove(id, cat) {
+            if(confirm('¿Eliminar este registro permanentemente?')) {
+                data[cat] = data[cat].filter(i => i.id !== id);
+                sync();
+                if($('#histDate').val()) loadHistory($('#histDate').val());
             }
         }
 
-        function renderTasks() {
-            const list = document.getElementById('task-list');
-            list.innerHTML = '';
-            appData.tasks.forEach(item => {
-                list.innerHTML += `<tr>
-                    <td>${item.desc}</td>
-                    <td>${item.owner}</td>
-                    <td><span class="badge bg-warning text-dark">${item.status}</span></td>
-                </tr>`;
+        // --- HELPER TO RENDER FULL DETAILS ---
+        function getDetailHtml(e) {
+            let html = '';
+            const conf = config[e.type];
+            conf.fields.forEach(f => {
+                const val = e[f.n];
+                if(f.t === 'check') {
+                    if(val) html += `<span class="badge bg-danger">CON BAJA</span> `;
+                } else if(val) {
+                    html += `<div class="entry-detail"><span class="data-label">${f.l}:</span>${val}</div>`;
+                }
             });
+            return html;
         }
 
-        // --- 6. MEETINGS LOGIC ---
-        function addMeeting() {
-            const time = document.getElementById('meet-time').value;
-            const name = document.getElementById('meet-name').value;
+        function render() {
+            const isToday = (e) => e.date === today();
+            const todayBits = data.bitacora.filter(isToday);
+            $('#todayCount').text(todayBits.length);
 
-            if(name) {
-                appData.meetings.push({ time, name });
-                const list = document.getElementById('meeting-list');
-                list.innerHTML += `<li class="list-group-item"><i class="far fa-clock"></i> ${time} - ${name}</li>`;
-                document.getElementById('meet-name').value = '';
-            }
+            $('#list-bitacora').html(todayBits.reverse().map(e => `
+                <div class="list-group-item p-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-bold ${config[e.type].color}"><i class="fas fa-circle small me-1"></i> ${e.type}</span>
+                        <span class="text-muted small">${e.time}</span>
+                    </div>
+                    <div class="small text-secondary">
+                        ${getDetailHtml(e)}
+                    </div>
+                    <div class="text-end mt-1"><i class="fas fa-trash-alt remove-btn" onclick="remove(${e.id}, 'bitacora')"></i></div>
+                </div>
+            `).join('') || '<p class="text-center text-muted p-4">No hay registros hoy</p>');
+
+            $('#list-tasks').html(data.tasks.filter(isToday).map(e => `<div class="d-flex justify-content-between border-bottom py-2 small"><span>• ${e.desc}</span><i class="fas fa-times remove-btn" onclick="remove(${e.id}, 'tasks')"></i></div>`).join(''));
+            $('#list-meetings').html(data.meetings.filter(isToday).map(e => `<div class="d-flex justify-content-between border-bottom py-2 small"><span><b>${e.time}</b> ${e.name}</span><i class="fas fa-times remove-btn" onclick="remove(${e.id}, 'meetings')"></i></div>`).join(''));
         }
 
-        // --- 7. EXPORT TO DOCX (Client Side) ---
-        function exportReport() {
-            const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
+        function loadHistory(d) {
+            const filter = (arr) => arr.filter(x => x.date === d);
+            const b = filter(data.bitacora);
+            const t = filter(data.tasks);
+            const m = filter(data.meetings);
 
-            const bitacoraRows = appData.bitacora.map(b => 
-                new Paragraph({ text: `• [${b.timestamp}] ${b.tipo} - ${b.persona || 'N/A'}`, bullet: { level: 0 } })
-            );
-
-            const taskRows = appData.tasks.map(t => 
-                new Paragraph({ text: `• ${t.desc} (${t.owner}) - ${t.status}`, bullet: { level: 0 } })
-            );
-
-            const doc = new Document({
-                sections: [{
-                    properties: {},
-                    children: [
-                        new Paragraph({ text: "Daily Operations Report", heading: HeadingLevel.TITLE }),
-                        new Paragraph({ text: `Date: ${new Date().toLocaleDateString()}`, heading: HeadingLevel.HEADING_2 }),
-                        
-                        new Paragraph({ text: " ", spacing: { before: 200 } }),
-                        new Paragraph({ text: "1. Service Metrics (End of Day)", heading: HeadingLevel.HEADING_1 }),
-                        new Paragraph({ text: `Final Calls: ${appData.metrics.calls} | NDS: ${appData.metrics.nds}% | NDA: ${appData.metrics.nda}%` }),
-
-                        new Paragraph({ text: " ", spacing: { before: 200 } }),
-                        new Paragraph({ text: "2. Bitacora (HR & Incidents)", heading: HeadingLevel.HEADING_1 }),
-                        ...bitacoraRows,
-
-                        new Paragraph({ text: " ", spacing: { before: 200 } }),
-                        new Paragraph({ text: "3. Pending Tasks", heading: HeadingLevel.HEADING_1 }),
-                        ...taskRows,
-                    ],
-                }],
-            });
-
-            Packer.toBlob(doc).then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                document.body.appendChild(a);
-                a.style = "display: none";
-                a.href = url;
-                a.download = `Daily_Report_${new Date().toISOString().slice(0,10)}.docx`;
-                a.click();
-                window.URL.revokeObjectURL(url);
-            });
+            $('#histContent').html(`
+                <div class="row">
+                    <div class="col-md-5 border-end"><h6><i class="fas fa-list"></i> Actividad</h6>
+                        ${b.map(e => `<div class="p-3 bg-white rounded mb-2 small shadow-sm">
+                            <div class="d-flex justify-content-between"><b>${e.time}</b> <span class="${config[e.type].color} fw-bold">${e.type}</span></div>
+                            <div class="mt-1">${getDetailHtml(e)}</div>
+                            <i class="fas fa-trash-alt remove-btn float-end mt-1" onclick="remove(${e.id}, 'bitacora')"></i>
+                        </div>`).join('') || '---'}
+                    </div>
+                    <div class="col-md-3 border-end"><h6><i class="fas fa-check-square"></i> Tareas</h6>
+                        ${t.map(e => `<div class="p-2 bg-white rounded mb-1 small shadow-sm">${e.desc} <i class="fas fa-trash-alt remove-btn float-end" onclick="remove(${e.id}, 'tasks')"></i></div>`).join('') || '---'}
+                    </div>
+                    <div class="col-md-4"><h6><i class="fas fa-handshake"></i> Reuniones</h6>
+                        ${m.map(e => `<div class="p-2 bg-white rounded mb-1 small shadow-sm"><b>${e.time}</b> ${e.name} <i class="fas fa-trash-alt remove-btn float-end" onclick="remove(${e.id}, 'meetings')"></i></div>`).join('') || '---'}
+                    </div>
+                </div>
+            `);
         }
+
+        const today = () => new Date().toLocaleDateString('en-CA');
+        const now = () => new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        function exportJSON() {
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `Egunerokoa_Backup_${today()}.json`; a.click();
+        }
+        $('#histDate').on('change', function() { loadHistory($(this).val()); });
     </script>
 </body>
 </html>

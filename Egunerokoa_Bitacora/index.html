@@ -35,6 +35,30 @@
         #loginOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .data-label { font-weight: bold; color: #718096; font-size: 0.75rem; text-transform: uppercase; margin-right: 5px; }
         .entry-detail { background: #f8fafc; padding: 2px 8px; border-radius: 4px; margin-right: 5px; display: inline-block; margin-bottom: 2px; }
+        .overlay-style {
+            display: none;       /* Hidden by default */
+            position: fixed;     /* Sticks to the screen even if you scroll */
+            top: 0; left: 0;     /* Start at the very top-left corner */
+            width: 100%;         /* Cover the whole width */
+            height: 100%;        /* Cover the whole height */
+            background: rgba(0,0,0,0.5); /* Semi-transparent black */
+            z-index: 99999;
+
+            /* THE CENTERING MAGIC */
+                   
+            justify-content: center; /* Centers horizontally */
+            align-items: center;     /* Centers vertically */
+        }
+        .overlay-style.is-visible {
+            display: flex; /* This overrides the 'none' and brings the centering back! */
+        }
+
+        .filter-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            min-width: 300px;
+        }
     </style>
 </head>
 <body>
@@ -47,10 +71,19 @@
         </div>
     </div>
 
+
+    <div id="filterOverlay" class="overlay-style">
+        <div class="filter-card">
+            <h3>Settings</h3>
+            <button id="closeBtn">Close</button>
+        </div>
+    </div>
+
     <div id="mainApp" style="display:none">
         <nav class="navbar navbar-dark bg-dark px-4 mb-4">
             <span class="navbar-brand mb-0 h1"><i class="fas fa-database me-2"></i> Egunerokoa</span>
             <button onclick="exportJSON()" class="btn btn-outline-info btn-sm">Descargar Backup JSON </button>
+            <button id="menuButton"></button>
         </nav>
 
         <div class="container-fluid">
@@ -65,6 +98,12 @@
                             <div class="col-md-4"><button class="quick-add-btn btn-libre" onclick="setupForm('Libre Por Horas')">Libre por horas</button></div>
                             <div class="col-md-4"><button class="quick-add-btn btn-formacion" onclick="setupForm('Formacion')"> Formación</button></div>
                             <div class="col-md-4"><button class="quick-add-btn btn-grave" onclick="setupForm('Grave')"> Grave</button></div>
+                            <div class="col-md-4"><button class="quick-add-btn btn-retraso" onclick="setupForm('RegistroLlaves')"> Retraso</button></div>
+                            <div class="col-md-4"><button class="quick-add-btn btn-falta" onclick="setupForm('Falta2')"> Falta</button></div>
+                            <div class="col-md-4"><button class="quick-add-btn btn-enfermo" onclick="setupForm('Enfermo2')"> Enfermo</button></div>
+                            <div class="col-md-4"><button class="quick-add-btn btn-libre" onclick="setupForm('Libre Por Horas2')">Libre por horas</button></div>
+                            <div class="col-md-4"><button class="quick-add-btn btn-formacion" onclick="setupForm('Formacion2')"> Formación</button></div>
+                            <div class="col-md-4"><button class="quick-add-btn btn-grave" onclick="setupForm('Grave2')"> Grave</button></div>
                         </div>
 
                         <div id="dynamicForm" class="form-container shadow">
@@ -132,6 +171,17 @@
     </div>
 
     <script>
+
+        // When the menu button is clicked
+        $('#menuButton').click(function() {
+           $('#filterOverlay').addClass('is-visible');
+        });
+
+        // When the close button is clicked
+        $('#closeBtn').click(function() {
+            $('#filterOverlay').removeClass('is-visible');
+        });
+        
         let data = JSON.parse(localStorage.getItem('egunerokoa_v3')) || { bitacora: [], tasks: [], meetings: [] };
         const sync = () => { localStorage.setItem('egunerokoa_v3', JSON.stringify(data)); render(); };
 
@@ -141,7 +191,13 @@
             'Enfermo': { color: 'text-info', fields: [{n:'p', l:'Persona', t:'text'}, {n:'baja', l:'¿Tiene Baja Médica?', t:'check'}] },
             'Libre Por Horas': { color: 'text-success', fields: [{n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}] },
             'Formacion': { color: 'text-primary', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Curso', t:'text'}] },
-            'Grave': { color: 'text-dark', fields: [{n:'m', l:'Descripción', t:'text'}] }
+            'Grave': { color: 'text-dark', fields: [{n:'m', l:'Descripción', t:'text'}] },
+            'RegistroLlaves': { color: 'text-warning', fields: [{n:'p', l:'Persona', t:'text'},{n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}, {n:'r', l:'Recuperación', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
+            'Falta2': { color: 'text-danger', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
+            'Enfermo2': { color: 'text-info', fields: [{n:'p', l:'Persona', t:'text'}, {n:'baja', l:'¿Tiene Baja Médica?', t:'check'}] },
+            'Libre Por Horas2': { color: 'text-success', fields: [{n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}] },
+            'Formacion2': { color: 'text-primary', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Curso', t:'text'}] },
+            'Grave2': { color: 'text-dark', fields: [{n:'m', l:'Descripción', t:'text'}] }
         };
 
         let activeCat = null;

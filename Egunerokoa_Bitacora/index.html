@@ -11,11 +11,12 @@
     <style>
         body { background-color: #f4f7f6; color: #2d3436; font-size: 0.95rem; }
         .card { border-radius: 12px; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+
         .quick-add-btn { 
             width: 100%; padding: 15px; text-align: left; background: white; 
-            border: 1px solid #edf2f7; border-left: 5px solid #cbd5e0; 
-            transition: all 0.2s; font-weight: 600; margin-bottom: 10px;
+            border: 1px solid #000000; transition: all 0.2s; font-weight: 600; margin-bottom: 10px;
         }
+        /*
         .quick-add-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         
         .btn-retraso { border-left-color: #f6ad55; color: #dd6b20; }
@@ -24,7 +25,7 @@
         .btn-libre { border-left-color: #68d391; color: #38a169; }
         .btn-formacion { border-left-color: #b794f4; color: #805ad5; }
         .btn-grave { border-left-color: #4a5568; color: #2d3748; }
-
+        */
         .form-container { display: none; background: #fff; border: 2px solid #4a90e2; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
         .form-container.active { display: block; animation: fadeIn 0.3s; }
         
@@ -49,7 +50,7 @@
     <div id="mainApp" style="display:none">
         <nav class="navbar navbar-dark bg-dark px-4 mb-4">
             <span class="navbar-brand mb-0 h1"><i class="fas fa-database me-2"></i> Egunerokoa</span>
-            <button onclick="exportJSON()" class="btn btn-outline-info btn-sm">Download JSON Backup</button>
+            <button onclick="exportJSON()" class="btn btn-outline-info btn-sm">Descargar Backup JSON </button>
         </nav>
 
         <div class="container-fluid">
@@ -61,7 +62,7 @@
                             <div class="col-md-4"><button class="quick-add-btn btn-retraso" onclick="setupForm('Retraso')"> Retraso</button></div>
                             <div class="col-md-4"><button class="quick-add-btn btn-falta" onclick="setupForm('Falta')"> Falta</button></div>
                             <div class="col-md-4"><button class="quick-add-btn btn-enfermo" onclick="setupForm('Enfermo')"> Enfermo</button></div>
-                            <div class="col-md-4"><button class="quick-add-btn btn-libre" onclick="setupForm('LibrePorHoras')">Libre por horas</button></div>
+                            <div class="col-md-4"><button class="quick-add-btn btn-libre" onclick="setupForm('Libre Por Horas')">Libre por horas</button></div>
                             <div class="col-md-4"><button class="quick-add-btn btn-formacion" onclick="setupForm('Formacion')"> Formación</button></div>
                             <div class="col-md-4"><button class="quick-add-btn btn-grave" onclick="setupForm('Grave')"> Grave</button></div>
                         </div>
@@ -138,7 +139,7 @@
             'Retraso': { color: 'text-warning', fields: [{n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}, {n:'r', l:'Recuperación', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
             'Falta': { color: 'text-danger', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
             'Enfermo': { color: 'text-info', fields: [{n:'p', l:'Persona', t:'text'}, {n:'baja', l:'¿Tiene Baja Médica?', t:'check'}] },
-            'LibrePorHoras': { color: 'text-success', fields: [{n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}] },
+            'Libre Por Horas': { color: 'text-success', fields: [{n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}] },
             'Formacion': { color: 'text-primary', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Curso', t:'text'}] },
             'Grave': { color: 'text-dark', fields: [{n:'m', l:'Descripción', t:'text'}] }
         };

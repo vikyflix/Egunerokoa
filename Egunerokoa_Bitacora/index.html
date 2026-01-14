@@ -84,7 +84,9 @@
         <nav class="navbar navbar-dark bg-dark px-4 mb-4">
             <span class="navbar-brand mb-0 h1"><i class="fas fa-database me-2"></i> Egunerokoa</span>
             <button onclick="exportJSON()" class="btn btn-outline-info btn-sm">Descargar Backup JSON </button>
-            <button id="menuButton"></button>
+            <button id="menuButton" class="btn btn-outline-light btn-sm ms-auto">
+                <i class="fas fa-cog"></i> Ajustes de Vista
+            </button>
         </nav>
 
         <div class="container-fluid">
@@ -92,7 +94,8 @@
                 <div class="col-md-8">
                     <div class="card p-4 mb-4">
                         <h5 class="mb-4">Registrar Incidencia</h5>
-                        <div class="row">
+                        <div class="row" id="categoryButtonsContainer">
+                            <!--
                             <div id="retraso" class="col-md-4"><button class="quick-add-btn btn-retraso" onclick="setupForm('Retraso')"> Retraso</button></div>
                             <div id="" class="col-md-4"><button class="quick-add-btn btn-falta" onclick="setupForm('Falta')"> Falta</button></div>
                             <div id="" class="col-md-4"><button class="quick-add-btn btn-enfermo" onclick="setupForm('Enfermo')"> Enfermo</button></div>
@@ -105,6 +108,7 @@
                             <div id="" class="col-md-4"><button class="quick-add-btn btn-libre" onclick="setupForm('Libre Por Horas2')">Libre por horas</button></div>
                             <div id="" class="col-md-4"><button class="quick-add-btn btn-formacion" onclick="setupForm('Formacion2')"> Formación</button></div>
                             <div id="" class="col-md-4"><button class="quick-add-btn btn-grave" onclick="setupForm('Grave2')"> Grave</button></div>
+                            -->
                         </div>
 
                         <div id="dynamicForm" class="form-container shadow">
@@ -114,6 +118,11 @@
                                 <button class="btn btn-primary px-4" onclick="saveEntry()">Guardar en Bitácora</button>
                                 <button class="btn btn-light" onclick="$('#dynamicForm').removeClass('active')">Cancelar</button>
                             </div>
+                        </div>
+                    </div>
+                    <div class="card p-3 mb-4 border-start border-primary border-4">
+                        <h6 class="fw-bold"><i class="fas fa-key me-2"></i> Gestión de Llaves</h6>
+                        <div id="keyList" class="small">
                         </div>
                     </div>
 
@@ -173,6 +182,72 @@
 
     <script>
 
+
+
+        const config = {
+            'Retraso': { color: 'text-warning', fields: [{n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}, {n:'r', l:'Recuperación', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
+            'Falta': { color: 'text-danger', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
+            'Enfermo': { color: 'text-info', fields: [{n:'p', l:'Persona', t:'text'}, {n:'baja', l:'¿Tiene Baja Médica?', t:'check'}] },
+            'Libre Por Horas': { color: 'text-success', fields: [{n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}] },
+            'Formacion': { color: 'text-primary', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Curso', t:'text'}] },
+            'Grave': { color: 'text-dark', fields: [{n:'m', l:'Descripción', t:'text'}] },
+            'Hitos': { color: 'text-primary', icon: 'fa-star', fields: [{n:'desc', l:'Hito Reseñable', t:'text'}, {n:'cli', l:'Cliente', t:'text'}] },
+            'Mejoras': { color: 'text-info', icon: 'fa-lightbulb', fields: [{n:'m', l:'Propuesta de Mejora', t:'text'}, {n:'imp', l:'Impacto (1-10)', t:'text'}] },
+            'Necesidades': { color: 'text-danger', icon: 'fa-exclamation-triangle', fields: [{n:'n', l:'Descripción', t:'text'}, {n:'u', l:'Urgencia', t:'text'}] },
+            'Seguimiento': { color: 'text-secondary', icon: 'fa-redo', fields: [{n:'cli', l:'Cliente', t:'text'}, {n:'acc', l:'Acción Realizada', t:'text'}, {n:'next', l:'Próximo Paso', t:'text'}] }
+        };
+
+
+
+        let data = JSON.parse(localStorage.getItem('egunerokoa_v3')) || {
+            bitacora: [], 
+            tasks: [], 
+            meetings: [], 
+            keys: [
+                { id: 1, name: "Principal", status: "In", holder: "Oficina" },
+                { id: 2, name: "Archivo", status: "In", holder: "Oficina" }
+            ],
+            timeLogs: [], // For "trabajos que se están realizando"
+            // This defines the "Permanent" templates for each role
+            profiles: {
+                "admin": Object.keys(config), 
+                "staff": ["Retraso", "Hitos", "Seguimiento"], 
+                "default": ["Retraso", "Falta"]
+            },
+            // This is the "Live" list the UI actually draws
+            visible: Object.keys(config), 
+            currentUser: "default" 
+        };
+        function login() {
+            let pass = $('#pass').val();
+            
+            if (pass === '1234') {
+                data.currentUser = "admin";
+            } else if (pass === '5555') {
+                data.currentUser = "staff";
+            } else {
+                data.currentUser = "default";
+            }
+
+            // IMPORTANT: Reset the visible buttons to the profile's default
+            data.visible = data.profiles[data.currentUser];
+
+            $('#loginOverlay').hide();
+            $('#mainApp').show();
+            
+            sync(); 
+        }
+            
+        const sync = () => { 
+            localStorage.setItem('egunerokoa_v3', 
+            JSON.stringify(data)); 
+            render(); 
+            renderButtons();
+            renderKeys();
+        };
+
+
+
         // When the menu button is clicked
         $('#menuButton').click(function() {
            $('#filterOverlay').addClass('is-visible');
@@ -183,9 +258,10 @@
                     fieldList.push(i)
                 });
                 fieldList.forEach(f => {
-                    html += f+"<input id="+f+" type='checkbox'/>"
-                    console.log(html)
+                    // We check if 'f' exists in our saved data.visible list
+                    let isChecked = data.visible.includes(f) ? "checked" : "";
                     
+                    html += `<div>${f} <input id='${f}' type='checkbox' ${isChecked} /></div>`;
                 });
                 html += `
                 </div>
@@ -202,9 +278,13 @@
             $('#filter-card input[type="checkbox"]:checked').each(function() {
             // 'this' refers to the current checkbox the loop is touching
             visibleCategories.push($(this).attr('id')); 
-        });
+            });
 
-    console.log("Categories to show:", visibleCategories);
+            data.visible = visibleCategories;
+
+            // Save to localStorage and refresh the UI
+            sync();
+            console.log("Categories to show:", visibleCategories);
             
             $('#filterOverlay').removeClass('is-visible');
         });
@@ -216,28 +296,8 @@
             $('#filterOverlay').removeClass('is-visible');
         });
 
-        
-        let data = JSON.parse(localStorage.getItem('egunerokoa_v3')) || { bitacora: [], tasks: [], meetings: [] };
-        const sync = () => { localStorage.setItem('egunerokoa_v3', JSON.stringify(data)); render(); };
-
-        const config = {
-            'Retraso': { color: 'text-warning', fields: [{n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}, {n:'r', l:'Recuperación', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
-            'Falta': { color: 'text-danger', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
-            'Enfermo': { color: 'text-info', fields: [{n:'p', l:'Persona', t:'text'}, {n:'baja', l:'¿Tiene Baja Médica?', t:'check'}] },
-            'Libre Por Horas': { color: 'text-success', fields: [{n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}] },
-            'Formacion': { color: 'text-primary', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Curso', t:'text'}] },
-            'Grave': { color: 'text-dark', fields: [{n:'m', l:'Descripción', t:'text'}] },
-            'RegistroLlaves': { color: 'text-warning', fields: [{n:'p', l:'Persona', t:'text'},{n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}, {n:'r', l:'Recuperación', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
-            'Hitos': { color: 'text-danger', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
-            'Enfermo2': { color: 'text-info', fields: [{n:'p', l:'Persona', t:'text'}, {n:'baja', l:'¿Tiene Baja Médica?', t:'check'}] },
-            'Libre Por Horas2': { color: 'text-success', fields: [{n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}] },
-            'Formacion2': { color: 'text-primary', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Curso', t:'text'}] },
-            'Grave2': { color: 'text-dark', fields: [{n:'m', l:'Descripción', t:'text'}] }
-        };
-
         let activeCat = null;
         let currentConfig = null;
-        function login() { $('#loginOverlay').hide(); $('#mainApp').show(); render(); }
 
         function setupForm(cat) {
             activeCat = cat;
@@ -269,8 +329,30 @@
             sync();
         }
 
-        function saveConfig(){
-            
+        function toggleKey(id) {
+            let key = data.keys.find(k => k.id === id);
+            if (key.status === "In") {
+                let person = prompt("¿Quién se lleva la llave?");
+                if (!person) return;
+                key.status = "Out";
+                key.holder = person;
+            } else {
+                key.status = "In";
+                key.holder = "Oficina";
+            }
+            sync();
+        }
+
+        // Update your render function to include this:
+        function renderKeys() {
+            $('#keyList').html(data.keys.map(k => `
+                <div class="d-flex justify-content-between align-items-center mb-1 p-2 bg-light rounded">
+                    <span><strong>${k.name}</strong>: ${k.holder}</span>
+                    <button onclick="toggleKey(${k.id})" class="btn btn-sm ${k.status === 'In' ? 'btn-success' : 'btn-warning'}">
+                        ${k.status === 'In' ? 'Disponible' : 'Fuera'}
+                    </button>
+                </div>
+            `).join(''));
         }
 
         function quickEntry(cat, obj) {
@@ -326,6 +408,33 @@
 
         }
 
+
+        function renderButtons() {
+            // Hide the settings cog if the user is not an admin
+            if (data.currentUser !== 'admin') {
+                $('#menuButton').hide();
+            } else {
+                $('#menuButton').show();
+            }
+            let html = "";
+            // We draw based on the currently active "visible" list
+            let currentVisible = data.visible || [];
+
+            Object.keys(config).forEach(cat => {
+                if (!currentVisible.includes(cat)) return;
+
+                html += `
+                    <div class="col-md-4 mb-2">
+                        <button class="quick-add-btn btn-${cat.toLowerCase().replace(/\s+/g, '')}" 
+                                onclick="setupForm('${cat}')">
+                            <i class="fas fa-tag small me-2"></i> ${cat}
+                        </button>
+                    </div>`;
+            });
+            $('#categoryButtonsContainer').html(html);
+        }
+
+
         function loadHistory(d) {
             const filter = (arr) => arr.filter(x => x.date === d);
             const b = filter(data.bitacora);
@@ -360,6 +469,21 @@
             a.href = url; a.download = `Egunerokoa_Backup_${today()}.json`; a.click();
         }
         $('#histDate').on('change', function() { loadHistory($(this).val()); });
+        $(document).ready(function() {
+            // 1. First, make sure 'data' is loaded 
+            // (This is already handled by your 'let data = ...' at the top)
+
+            // 2. Trigger the initial render
+            // This fills the empty <div> containers with actual content
+            render();
+            renderButtons();
+
+            // 3. Optional: If you want to start at the login screen
+            $('#mainApp').hide();
+            $('#loginOverlay').show();
+            
+            console.log("App Initialized: Data loaded and UI rendered.");
+        });
     </script>
 </body>
 </html>

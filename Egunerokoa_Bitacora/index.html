@@ -73,9 +73,10 @@
 
 
     <div id="filterOverlay" class="overlay-style">
-        <div class="filter-card">
+        <div id="filter-card" class="filter-card">
             <h3>Settings</h3>
             <button id="closeBtn">Close</button>
+            <button id="saveConfig">Save</button>
         </div>
     </div>
 
@@ -92,18 +93,18 @@
                     <div class="card p-4 mb-4">
                         <h5 class="mb-4">Registrar Incidencia</h5>
                         <div class="row">
-                            <div class="col-md-4"><button class="quick-add-btn btn-retraso" onclick="setupForm('Retraso')"> Retraso</button></div>
-                            <div class="col-md-4"><button class="quick-add-btn btn-falta" onclick="setupForm('Falta')"> Falta</button></div>
-                            <div class="col-md-4"><button class="quick-add-btn btn-enfermo" onclick="setupForm('Enfermo')"> Enfermo</button></div>
-                            <div class="col-md-4"><button class="quick-add-btn btn-libre" onclick="setupForm('Libre Por Horas')">Libre por horas</button></div>
-                            <div class="col-md-4"><button class="quick-add-btn btn-formacion" onclick="setupForm('Formacion')"> Formación</button></div>
-                            <div class="col-md-4"><button class="quick-add-btn btn-grave" onclick="setupForm('Grave')"> Grave</button></div>
-                            <div class="col-md-4"><button class="quick-add-btn btn-retraso" onclick="setupForm('RegistroLlaves')"> Retraso</button></div>
-                            <div class="col-md-4"><button class="quick-add-btn btn-falta" onclick="setupForm('Falta2')"> Falta</button></div>
-                            <div class="col-md-4"><button class="quick-add-btn btn-enfermo" onclick="setupForm('Enfermo2')"> Enfermo</button></div>
-                            <div class="col-md-4"><button class="quick-add-btn btn-libre" onclick="setupForm('Libre Por Horas2')">Libre por horas</button></div>
-                            <div class="col-md-4"><button class="quick-add-btn btn-formacion" onclick="setupForm('Formacion2')"> Formación</button></div>
-                            <div class="col-md-4"><button class="quick-add-btn btn-grave" onclick="setupForm('Grave2')"> Grave</button></div>
+                            <div id="retraso" class="col-md-4"><button class="quick-add-btn btn-retraso" onclick="setupForm('Retraso')"> Retraso</button></div>
+                            <div id="" class="col-md-4"><button class="quick-add-btn btn-falta" onclick="setupForm('Falta')"> Falta</button></div>
+                            <div id="" class="col-md-4"><button class="quick-add-btn btn-enfermo" onclick="setupForm('Enfermo')"> Enfermo</button></div>
+                            <div id="" class="col-md-4"><button class="quick-add-btn btn-libre" onclick="setupForm('Libre Por Horas')">Libre por horas</button></div>
+                            <div id="" class="col-md-4"><button class="quick-add-btn btn-formacion" onclick="setupForm('Formacion')"> Formación</button></div>
+                            <div id="" class="col-md-4"><button class="quick-add-btn btn-grave" onclick="setupForm('Grave')"> Grave</button></div>
+                            <div id="" class="col-md-4"><button class="quick-add-btn btn-retraso" onclick="setupForm('RegistroLlaves')"> Registro Llaves</button></div>
+                            <div id="" class="col-md-4"><button class="quick-add-btn btn-falta" onclick="setupForm('Hitos')"> Hitos Reseñables</button></div>
+                            <div id="" class="col-md-4"><button class="quick-add-btn btn-enfermo" onclick="setupForm('Enfermo2')"> Enfermo</button></div>
+                            <div id="" class="col-md-4"><button class="quick-add-btn btn-libre" onclick="setupForm('Libre Por Horas2')">Libre por horas</button></div>
+                            <div id="" class="col-md-4"><button class="quick-add-btn btn-formacion" onclick="setupForm('Formacion2')"> Formación</button></div>
+                            <div id="" class="col-md-4"><button class="quick-add-btn btn-grave" onclick="setupForm('Grave2')"> Grave</button></div>
                         </div>
 
                         <div id="dynamicForm" class="form-container shadow">
@@ -175,12 +176,46 @@
         // When the menu button is clicked
         $('#menuButton').click(function() {
            $('#filterOverlay').addClass('is-visible');
+                let fieldList = [];
+                let html = "<h3>Settings</h3>"
+                let fieldConfig;
+                $.map( config, function( val, i ) {
+                    fieldList.push(i)
+                });
+                fieldList.forEach(f => {
+                    html += f+"<input id="+f+" type='checkbox'/>"
+                    console.log(html)
+                    
+                });
+                html += `
+                </div>
+                <button id="closeBtn" class="btn btn-secondary">Close</button>
+                <button id="saveConfig" class="btn btn-primary">Save</button>`; 
+                $('#filter-card').html(html);
         });
 
-        // When the close button is clicked
-        $('#closeBtn').click(function() {
+        $(document).on('click', '#saveConfig', function() {
+            let visibleCategories = [];
+
+            // 2. Select ALL checkboxes inside your filter-card
+            // We use a specific class like '.filter-check' to be precise
+            $('#filter-card input[type="checkbox"]:checked').each(function() {
+            // 'this' refers to the current checkbox the loop is touching
+            visibleCategories.push($(this).attr('id')); 
+        });
+
+    console.log("Categories to show:", visibleCategories);
+            
             $('#filterOverlay').removeClass('is-visible');
         });
+
+
+        // 2. FOR THE CLOSE BUTTON
+        $(document).on('click', '#closeBtn', function() {
+            console.log("CLOSE CLICKED!");
+            $('#filterOverlay').removeClass('is-visible');
+        });
+
         
         let data = JSON.parse(localStorage.getItem('egunerokoa_v3')) || { bitacora: [], tasks: [], meetings: [] };
         const sync = () => { localStorage.setItem('egunerokoa_v3', JSON.stringify(data)); render(); };
@@ -193,7 +228,7 @@
             'Formacion': { color: 'text-primary', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Curso', t:'text'}] },
             'Grave': { color: 'text-dark', fields: [{n:'m', l:'Descripción', t:'text'}] },
             'RegistroLlaves': { color: 'text-warning', fields: [{n:'p', l:'Persona', t:'text'},{n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}, {n:'r', l:'Recuperación', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
-            'Falta2': { color: 'text-danger', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
+            'Hitos': { color: 'text-danger', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
             'Enfermo2': { color: 'text-info', fields: [{n:'p', l:'Persona', t:'text'}, {n:'baja', l:'¿Tiene Baja Médica?', t:'check'}] },
             'Libre Por Horas2': { color: 'text-success', fields: [{n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}] },
             'Formacion2': { color: 'text-primary', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Curso', t:'text'}] },
@@ -201,6 +236,7 @@
         };
 
         let activeCat = null;
+        let currentConfig = null;
         function login() { $('#loginOverlay').hide(); $('#mainApp').show(); render(); }
 
         function setupForm(cat) {
@@ -231,6 +267,10 @@
             data.bitacora.push(entry);
             $('#dynamicForm').removeClass('active');
             sync();
+        }
+
+        function saveConfig(){
+            
         }
 
         function quickEntry(cat, obj) {
@@ -283,6 +323,7 @@
 
             $('#list-tasks').html(data.tasks.filter(isToday).map(e => `<div class="d-flex justify-content-between border-bottom py-2 small"><span>• ${e.desc}</span><i class="fas fa-times remove-btn" onclick="remove(${e.id}, 'tasks')"></i></div>`).join(''));
             $('#list-meetings').html(data.meetings.filter(isToday).map(e => `<div class="d-flex justify-content-between border-bottom py-2 small"><span><b>${e.time}</b> ${e.name}</span><i class="fas fa-times remove-btn" onclick="remove(${e.id}, 'meetings')"></i></div>`).join(''));
+
         }
 
         function loadHistory(d) {

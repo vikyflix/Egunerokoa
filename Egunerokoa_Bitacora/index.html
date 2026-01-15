@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Egunerokoa - Full Info System</title>
+    <title>Egunerokoa - SAU</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -61,6 +61,7 @@
         <nav class="navbar navbar-dark bg-dark px-4 mb-4">
             <span class="navbar-brand mb-0 h1"><i class="fas fa-database me-2 text-info"></i> Egunerokoa</span>
             <div class="d-flex gap-2">
+                <span id="currentUser" class="btn btn-outline-info btn-sm"></span>
                 <button onclick="exportJSON()" class="btn btn-outline-info btn-sm">Backup JSON</button>
                 <button id="menuButton" class="btn btn-outline-light btn-sm"><i class="fas fa-cog"></i> Ajustes</button>
                 <button onclick="location.reload()" class="btn btn-outline-danger btn-sm">Salir</button>
@@ -154,7 +155,8 @@
     </div>
 
     <script>
-        // CONFIGURATION: Define all fields for each category
+        // Añadiendo lineas a este objeto, se añaden campos para formularios principales,
+        // Se añaden los campos etc aqui y se generan con JS
         const config = {
             'Trabajo / Tiempo': { color: 'text-primary', icon: '', fields: [{n:'cli', l:'Cliente', t:'text'}, {n:'m', l:'Tarea', t:'text'}, {n:'h', l:'Horas', t:'number'}] },
             'Retraso': { color: 'text-warning', icon: '', fields: [{n:'p', l:'Persona', t:'text'}, {n:'h', l:'Horas', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
@@ -164,10 +166,14 @@
             'Seguimiento': { color: 'text-secondary', icon: '', fields: [{n:'cli', l:'Cliente', t:'text'}, {n:'acc', l:'Acción', t:'text'}, {n:'next', l:'Pendiente', t:'text'}] },
             'Falta': { color: 'text-danger', icon: '', fields: [{n:'p', l:'Persona', t:'text'}, {n:'m', l:'Motivo', t:'text'}] },
             'Enfermo': { color: 'text-info', icon: '', fields: [{n:'p', l:'Persona', t:'text'}, {n:'baja', l:'¿Baja Médica?', t:'check'}] },
-            'Incidencias': {color: 'text-info',icon: '', fields: [{n:'s',l:'Servicio',t:'text'},{n:'i',l:'Incidencia',t:'text'},{n:'t',l:'Tipo',t:'text'}]}
+            'Incidencias': {color: 'text-info',icon: '', fields: [{n:'s',l:'Servicio',t:'text'},{n:'i',l:'Incidencia',t:'text'},{n:'t',l:'Tipo',t:'text'}]},
+            'Implantaciones / Gestion de cambio': {color: 'text-info',icon: '', fields: [{n:'p',l:'Proyecto',t:'text'},{n:'d',l:'Descripcion',t:'text'},{n:'e',l:'Extra',t:'text'}]},
+            'Correos': {color: 'text-info',icon: '', fields: [{n:'s',l:'Servicio',t:'text'},{n:'e',l:'Email',t:'text'},{n:'n',l:'Nº',t:'number'}]}
         };
 
-        // DATA STATE
+        // Esta estructura es donde se guarda/almacena toda la información. 
+        // El estado actual no representa la información almacenada, pero si se usa esta variable junto con el localStorage del navegador.
+        // En un futuro se migrara a un server MySQL
         let data = JSON.parse(localStorage.getItem('egunerokoa_v3')) || {
             bitacora: [], 
             tasks: [], 
@@ -177,17 +183,20 @@
                 { id: 2, name: "Oficina", status: "In", holder: "Oficina" }
             ],
             profiles: {
-                "admin": Object.keys(config), 
-                "staff": ["Trabajo / Tiempo", "Retraso", "Hitos", "Seguimiento"], 
+                "Deitu": Object.keys(config), 
+                "SaP": ["Trabajo / Tiempo", "Retraso", "Hitos", "Seguimiento"], 
                 "default": ["Hitos"]
             },
             visible: Object.keys(config), 
             currentUser: "default" 
         };
 
+        // Variables para coger la fecha y la hora actual. Principalmente para los registros
         const today = () => new Date().toLocaleDateString('en-CA');
         const now = () => new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
+
+        // Esta funcion actualiza y sincroniza la información que se ve en pantalla con la información que esta almacenada.
         function sync() { 
             localStorage.setItem('egunerokoa_v3', JSON.stringify(data)); 
             render(); 
@@ -195,20 +204,24 @@
             renderKeys();
         }
 
-        // LOGIN SYSTEM
+        // Funcion que gestiona el login, 
+        // por el momento esta "hardcoded"
+        // Principalmente se actualizan los campos que se han de mostrar en cada perfil, asi como el nombre arriba
         function login() {
             let pass = $('#pass').val();
-            if (pass === '1234') data.currentUser = "admin";
-            else if (pass === '5555') data.currentUser = "staff";
+            if (pass === 'deitu') data.currentUser = "Deitu";
+            else if (pass === 'SaP') data.currentUser = "SaP";
             else data.currentUser = "default";
 
             data.visible = data.profiles[data.currentUser] || data.profiles["default"];
             $('#loginOverlay').hide();
             $('#mainApp').show();
+            console.log($('#currentUser').text())
+            $('#currentUser').text(data.currentUser);
             sync(); 
         }
 
-        // KEY MANAGEMENT
+        // Funcion que gestiona el manejo de llaves, funcion simple donde le pones quien la tiene y cambia de persona a Oficina
         function toggleKey(id) {
             let key = data.keys.find(k => k.id === id);
             if (key.status === "In") {
@@ -221,8 +234,9 @@
             sync();
         }
 
+       // Funcion para actualizar visualmente en funcion a quien o donde este la llave
         function renderKeys() {
-            console.log(data.keys)
+            //console.log(data.keys)
             $('#keyList').html(data.keys.map(k => `
                 <div class="col-md-4">
                     <div class="p-2 border rounded d-flex justify-content-between align-items-center bg-white shadow-sm">
@@ -238,7 +252,7 @@
             `).join(''));
         }
 
-        // DYNAMIC FORM LOGIC
+        // Gestion dinamica de los formularios
         let activeCat = null;
         function setupForm(cat) {
             activeCat = cat;
@@ -259,6 +273,7 @@
             $('#dynamicForm').addClass('active');
         }
 
+        // Funcion para almacenar principalmente las reuniones y las tareas
         function saveEntry() {
             let entry = { id: Date.now(), type: activeCat, date: today(), time: now() };
             config[activeCat].fields.forEach(f => {
@@ -270,7 +285,7 @@
             sync();
         }
 
-        // LIST RENDERING
+        // Funcion que gestiona los detalles de la lista del historico
         function getDetailHtml(e) {
             let html = '';
             const conf = config[e.type];
@@ -286,6 +301,7 @@
             return html;
         }
 
+        // Gestion renderizado dinamico del historial
         function render() {
             const isToday = (e) => e.date === today();
             const todayBits = data.bitacora.filter(isToday);
@@ -314,7 +330,7 @@
                     <i class="fas fa-times remove-btn" onclick="remove(${e.id}, 'tasks')"></i>
                 </div>
             `).join(''));
-            console.log(data.tasks.map(e => console.log(e)))
+            //console.log(data.tasks.map(e => console.log(e)))
             
             $('#list-meetings').html(data.meetings.filter(isToday).map(e => `
                 <div class="d-flex justify-content-between border-bottom py-2 small">
@@ -324,8 +340,10 @@
             `).join(''));
         }
 
+        // Gestion renderizado dinamico de los botones en base a que se ha elegido mostrar para ese perfil
+        // Se gestiona tambien si el boton de "Ajustes" aparece o no
         function renderButtons() {
-            data.currentUser === 'admin' ? $('#menuButton').show() : $('#menuButton').hide();
+            data.currentUser === 'Deitu' ? $('#menuButton').show() : $('#menuButton').hide();
             let html = "";
             let currentVisible = data.visible || [];
 
@@ -343,15 +361,16 @@
         }
 
 
-        // SETTINGS SYSTEM (Independent Profiles)
+        // Muestra el menu/contexto que gestiona el visalizado de los ajustes
+        // Se añaden checkboxes en base a el campo "Config" mas arriba
         $('#menuButton').click(function() {
             $('#filterOverlay').addClass('is-visible');
             let html = `
                 <h5 class="fw-bold mb-3"><i class="fas fa-user-shield me-2"></i> Ajustes de Perfiles</h5>
                 <label class="small fw-bold mb-1">Seleccionar Perfil:</label>
                 <select id="profileToEdit" class="form-select mb-3">
-                    <option value="admin">Administrador (1234)</option>
-                    <option value="staff">Staff (5555)</option>
+                    <option value="Deitu">Deitu (deitu)</option>
+                    <option value="SaP">SaP (sap)</option>
                     <option value="default">Público (Otros)</option>
                 </select>
                 <div class="small text-muted mb-2">Selecciona qué funcionalidades están disponibles:</div>
@@ -361,7 +380,7 @@
                     <button id="closeBtn" class="btn btn-secondary w-100">Cerrar</button>
                 </div>`;
             $('#filter-card').html(html);
-            loadProfileBoxes('admin');
+            loadProfileBoxes('Deitu');
         });
 
         function loadProfileBoxes(role) {
@@ -393,12 +412,13 @@
             $('#filterOverlay').removeClass('is-visible');
         });
 
+
         $(document).on('click', '#closeBtn', function() { $('#filterOverlay').removeClass('is-visible'); });
 
-        // MISC HELPERS
+
         function quickEntry(cat, obj) {
             if(!Object.values(obj)[0]) return;
-            console.log(obj)
+            //console.log(obj)
             obj.id = Date.now(); obj.date = today();
             data[cat].push(obj); 
             sync();
@@ -458,3 +478,4 @@
     </script>
 </body>
 </html>
+
